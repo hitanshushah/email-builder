@@ -1,0 +1,13 @@
+services:
+  email-builder:
+    image: node:20-bookworm-slim
+    working_dir: /email-builder/
+    volumes:
+      - .:/email-builder
+      - /email-builder/node-modules/
+    entrypoint: /bin/bash -c
+    command: >
+      'npm install && npm run build && npx vite --host'
+    restart: unless-stopped
+    ports:
+      - "${EXTERNAL_PORT:-5173}:5173"

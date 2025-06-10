@@ -1,0 +1,62 @@
+services:
+  fastify:
+    image: node:20-bookworm-slim
+    working_dir: /email-builder
+    volumes:
+      - .:/email-builder
+    command: >
+      sh -c "
+        npm install &&
+        npx tsx watch src/server/api/index.ts
+      "
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "4000:4000"
+
+  email-builder:
+    image: node:20-bookworm-slim
+    working_dir: /email-builder
+    volumes:
+      - .:/email-builder
+    command: >
+      sh -c "npm install && node tools/migrate.cjs status && node tools/migrate.cjs up && npm run dev"
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${EXTERNAL_PORT:-8005}:5173"
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    restart: unless-stopped
+  db:
+    platform: linux/amd64 #for platform error on Apple M1 chips
+    restart: unless-stopped
+    env_file: .env
+    image: postgres:16.0-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db-data:/var/lib/postgresql/data/ #using a volume
+      #- ./data:/var/lib/postgresql/data/ # if you want to use a bind folder
+    ports:
+      - "4832:5432"
+  minio:
+    image: docker.io/bitnami/minio:2024
+    ports:
+      - '4800:9000'
+      - '4801:9001'
+    volumes:
+      - 'minio_data:/data'
+    environment:
+      - MINIO_ROOT_USER=dev
+      - MINIO_ROOT_PASSWORD=password
+      - MINIO_DEFAULT_BUCKETS=default-bucket
+volumes:
+  db-data:
+  minio_data:
