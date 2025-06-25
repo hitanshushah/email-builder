@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 
-import { Stack, useTheme } from '@mui/material';
+import { Stack, useTheme, Box, Chip } from '@mui/material';
 
 import { useInspectorDrawerOpen, useSamplesDrawerOpen } from '../documents/editor/EditorContext';
+import { useAuthStore } from '../stores/authStore';
 
 import InspectorDrawer, { INSPECTOR_DRAWER_WIDTH } from './InspectorDrawer';
 import SamplesDrawer, { SAMPLES_DRAWER_WIDTH } from './SamplesDrawer';
@@ -19,6 +20,7 @@ function useDrawerTransition(cssProperty: 'margin-left' | 'margin-right', open: 
 export default function App() {
   const inspectorDrawerOpen = useInspectorDrawerOpen();
   const samplesDrawerOpen = useSamplesDrawerOpen();
+  const { user, isAuthenticated } = useAuthStore();
 
   const marginLeftTransition = useDrawerTransition('margin-left', samplesDrawerOpen);
   const marginRightTransition = useDrawerTransition('margin-right', inspectorDrawerOpen);
@@ -45,6 +47,29 @@ export default function App() {
     <>
       <InspectorDrawer />
       <SamplesDrawer />
+
+      {/* User info header */}
+      {isAuthenticated && user && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 16,
+            right: 16,
+            zIndex: 1000,
+            backgroundColor: 'background.paper',
+            borderRadius: 1,
+            p: 1,
+            boxShadow: 2,
+          }}
+        >
+          <Chip
+            label={`Welcome, ${user.username}`}
+            color="primary"
+            variant="outlined"
+            size="small"
+          />
+        </Box>
+      )}
 
       <Stack
         sx={{

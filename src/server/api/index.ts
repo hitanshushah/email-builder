@@ -4,9 +4,11 @@ import saveRoute from './routes/save';
 import cors from '@fastify/cors';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUI from '@fastify/swagger-ui';
+import storeUsername from './middleware/storeUsername';
 
 const fastify = Fastify({ logger: true });
 
+await fastify.register(storeUsername); 
 
 fastify.register(fastifySwagger, {
   swagger: {

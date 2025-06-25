@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { MonitorOutlined, PhoneIphoneOutlined } from '@mui/icons-material';
-import { Box, Stack, SxProps, ToggleButton, ToggleButtonGroup, Tooltip } from '@mui/material';
+import { MonitorOutlined, PhoneIphoneOutlined, AccountCircle, Logout } from '@mui/icons-material';
+import { Box, Stack, SxProps, ToggleButton, ToggleButtonGroup, Tooltip, Chip, Menu, MenuItem, Button } from '@mui/material';
 import { Reader } from '@usewaypoint/email-builder';
 
 import EditorBlock from '../../documents/editor/EditorBlock';
@@ -11,6 +11,7 @@ import {
   useSelectedMainTab,
   useSelectedScreenSize,
 } from '../../documents/editor/EditorContext';
+import { useAuthStore } from '../../stores/authStore';
 import ToggleInspectorPanelButton from '../InspectorDrawer/ToggleInspectorPanelButton';
 import ToggleSamplesPanelButton from '../SamplesDrawer/ToggleSamplesPanelButton';
 
@@ -25,6 +26,21 @@ export default function TemplatePanel() {
   const document = useDocument();
   const selectedMainTab = useSelectedMainTab();
   const selectedScreenSize = useSelectedScreenSize();
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+
+  const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleUserMenuClose();
+    logout();
+  };
 
   let mainBoxSx: SxProps = {
     height: '100%',
@@ -94,7 +110,7 @@ export default function TemplatePanel() {
           <Stack direction="row" spacing={2}>
             <MainTabsGroup />
           </Stack>
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={2} alignItems="center">
             <DownloadJson />
             <ImportJson />
             <ToggleButtonGroup value={selectedScreenSize} exclusive size="small" onChange={handleScreenSizeChange}>
@@ -110,6 +126,48 @@ export default function TemplatePanel() {
               </ToggleButton>
             </ToggleButtonGroup>
             <ShareButton />
+            {/* Show Login button if not authenticated, else show username chip and logout menu */}
+            {!isAuthenticated ? (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => window.location.href = import.meta.env.VITE_APP_LOGIN_URL}
+                data-testid="login-button"
+              >
+                Login
+              </Button>
+            ) : (
+              user && (
+                <>
+                  <Chip
+                    icon={<AccountCircle />}
+                    label={user.username}
+                    variant="outlined"
+                    size="small"
+                    onClick={handleUserMenuClick}
+                    sx={{ cursor: 'pointer' }}
+                  />
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleUserMenuClose}
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                  >
+                    <MenuItem onClick={handleLogout}>
+                      <Logout sx={{ mr: 1 }} fontSize="small" />
+                      Logout
+                    </MenuItem>
+                  </Menu>
+                </>
+              )
+            )}
           </Stack>
         </Stack>
         <ToggleInspectorPanelButton />
