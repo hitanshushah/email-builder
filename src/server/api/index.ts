@@ -1,5 +1,5 @@
 import Fastify from 'fastify';
-import healthRoutes from './routes/health';
+import healthRoutes from './routes/authenticateUser';
 import saveRoute from './routes/save';
 import cors from '@fastify/cors';
 import fastifySwagger from '@fastify/swagger';

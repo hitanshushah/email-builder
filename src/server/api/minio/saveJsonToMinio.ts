@@ -13,7 +13,7 @@ export async function saveJsonToMinio(bucket: string, fileName: string, jsonData
   
     const res = await minioClient.putObject(bucket, fileName, stream, metaData);
     if (res.etag) {
-        const endpoint = 'localhost:4801/browser';
+        const endpoint = process.env.MINIO_PUBLIC_URL;
         const url = `${endpoint}/${bucket}/${fileName}`;
         return {
             etag: res.etag,

@@ -2,15 +2,16 @@ import React from 'react';
 
 import { Button } from '@mui/material';
 
-import { resetDocument } from '../../documents/editor/EditorContext';
-import getConfiguration from '../../getConfiguration';
-
-export default function SidebarButton({ href, children }: { href: string; children: JSX.Element | string }) {
-  const handleClick = () => {
-    resetDocument(getConfiguration(href));
-  };
+export default function SidebarButton({ href, children, selected, onClick }: { href: string; children: JSX.Element | string; selected?: boolean; onClick?: () => void }) {
   return (
-    <Button size="small" href={href} onClick={handleClick}>
+    <Button
+      size="small"
+      href={href}
+      onClick={onClick}
+      variant={selected ? 'contained' : 'text'}
+      color={selected ? 'primary' : 'inherit'}
+      style={{ textAlign: 'left', width: '100%' }}
+    >
       {children}
     </Button>
   );

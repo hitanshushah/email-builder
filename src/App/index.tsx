@@ -25,28 +25,12 @@ export default function App() {
   const marginLeftTransition = useDrawerTransition('margin-left', samplesDrawerOpen);
   const marginRightTransition = useDrawerTransition('margin-right', inspectorDrawerOpen);
 
-  const [healthStatus, setHealthStatus] = useState<string | null>(null);
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
-  useEffect(() => {
-    fetch('/api/health')
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to fetch');
-        return response.json();
-      })
-      .then(data => {
-        console.log('API response:', data);
-        setHealthStatus(data.status || 'ok');
-      })
-      .catch(error => {
-        console.error('API call failed:', error);
-        setHealthStatus('error');
-      });
-  }, []);
-  
   return (
     <>
       <InspectorDrawer />
-      <SamplesDrawer />
+      <SamplesDrawer refreshSignal={refreshSignal} />
 
       {/* User info header */}
       {isAuthenticated && user && (
@@ -78,7 +62,7 @@ export default function App() {
           transition: [marginLeftTransition, marginRightTransition].join(', '),
         }}
       >
-        <TemplatePanel />
+        <TemplatePanel setRefreshSignal={setRefreshSignal} />
       </Stack>
     </>
   );

@@ -20,7 +20,7 @@ services:
     volumes:
       - .:/email-builder
     command: >
-      sh -c "npm install && npm run dev"
+      sh -c "npm install && node tools/migrate.cjs status && node tools/migrate.cjs up && npm run dev"
     restart: unless-stopped
     env_file: .env
     ports:

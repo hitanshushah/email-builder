@@ -4,27 +4,36 @@ import { saveDocumentToDb } from '../db/saveToDb';
 
 const saveRoute: FastifyPluginAsync = async (fastify) => {
   fastify.post('/save', async (request, reply) => {
-    if (!request.user?.username) {
+    if (!request.user?.username || !request.user?.user_id) {
       return reply.status(401).send({ 
         success: false, 
         error: 'Authentication required' 
       });
     }
 
-    const document = request.body;
+    const { document, templateName } = request.body as { document: any, templateName: string };
     const username = request.user.username;
+    const userId = request.user.user_id;
+
+    if (!templateName) {
+      return reply.status(400).send({
+        success: false,
+        error: 'Template name is required'
+      });
+    }
 
     const bucket = 'default-bucket';
     const fileName = `document-${Date.now()}-${username}.json`;
     const res = await saveJsonToMinio(bucket, fileName, document);
     if (res) {
         try {
-          const savedRecord = await saveDocumentToDb(fileName, res.etag, res.url);
+          const savedRecord = await saveDocumentToDb(templateName, fileName, res.url, userId);
           if (savedRecord.success) {
               return { 
                 success: true, 
                 file: fileName,
-                username: username
+                username: username,
+                template: savedRecord.template
               };
           }
         } catch (dbError) {
