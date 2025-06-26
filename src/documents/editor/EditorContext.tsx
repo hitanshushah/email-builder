@@ -14,6 +14,14 @@ type TValue = {
 
   inspectorDrawerOpen: boolean;
   samplesDrawerOpen: boolean;
+  
+  selectedTemplate: {
+    id: number;
+    key: string;
+    display_name: string;
+    file_name?: string;
+    version_no: number;
+  } | null;
 };
 
 const editorStateStore = create<TValue>(() => ({
@@ -25,6 +33,8 @@ const editorStateStore = create<TValue>(() => ({
 
   inspectorDrawerOpen: true,
   samplesDrawerOpen: true,
+  
+  selectedTemplate: null,
 }));
 
 export function useDocument() {
@@ -51,12 +61,42 @@ export function useSelectedSidebarTab() {
   return editorStateStore((s) => s.selectedSidebarTab);
 }
 
+export function setSelectedSidebarTab(selectedSidebarTab: TValue['selectedSidebarTab']) {
+  return editorStateStore.setState({ selectedSidebarTab });
+}
+
+export function useSelectedTemplate() {
+  return editorStateStore((s) => s.selectedTemplate);
+}
+
+export function setSelectedTemplate(selectedTemplate: TValue['selectedTemplate']) {
+  return editorStateStore.setState({ selectedTemplate });
+}
+
 export function useInspectorDrawerOpen() {
   return editorStateStore((s) => s.inspectorDrawerOpen);
 }
 
+export function setInspectorDrawerOpen(inspectorDrawerOpen: TValue['inspectorDrawerOpen']) {
+  return editorStateStore.setState({ inspectorDrawerOpen });
+}
+
+export function toggleInspectorDrawerOpen() {
+  const inspectorDrawerOpen = !editorStateStore.getState().inspectorDrawerOpen;
+  return editorStateStore.setState({ inspectorDrawerOpen });
+}
+
 export function useSamplesDrawerOpen() {
   return editorStateStore((s) => s.samplesDrawerOpen);
+}
+
+export function setSamplesDrawerOpen(samplesDrawerOpen: TValue['samplesDrawerOpen']) {
+  return editorStateStore.setState({ samplesDrawerOpen });
+}
+
+export function toggleSamplesDrawerOpen() {
+  const samplesDrawerOpen = !editorStateStore.getState().samplesDrawerOpen;
+  return editorStateStore.setState({ samplesDrawerOpen });
 }
 
 export function setSelectedBlockId(selectedBlockId: TValue['selectedBlockId']) {
@@ -92,16 +132,6 @@ export function setDocument(document: TValue['document']) {
       ...document,
     },
   });
-}
-
-export function toggleInspectorDrawerOpen() {
-  const inspectorDrawerOpen = !editorStateStore.getState().inspectorDrawerOpen;
-  return editorStateStore.setState({ inspectorDrawerOpen });
-}
-
-export function toggleSamplesDrawerOpen() {
-  const samplesDrawerOpen = !editorStateStore.getState().samplesDrawerOpen;
-  return editorStateStore.setState({ samplesDrawerOpen });
 }
 
 export function setSelectedScreenSize(selectedScreenSize: TValue['selectedScreenSize']) {

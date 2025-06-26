@@ -7,7 +7,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     user?: {
       username: string;
-      user_id?: string;
+      user_id?: number;
     };
   }
 }

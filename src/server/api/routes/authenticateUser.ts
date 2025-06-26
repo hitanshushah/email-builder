@@ -3,6 +3,7 @@ import db from '../../../../utils/db'
 import fetch from 'node-fetch'
 import { minioClient } from '../../../../utils/minioClient'
 import stream from 'stream'
+import { getAllTemplatesWithVersions } from '../db/saveToDb'
 
 const healthRoute: FastifyPluginAsync = async (fastify) => {
 
@@ -25,8 +26,8 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
       return reply.status(401).send({ success: false, error: 'Not authenticated' });
     }
     try {
-      const result = await db.query('SELECT id, name, link FROM templates WHERE user_id = $1', [request.user.user_id]);
-      return { success: true, templates: result.rows };
+      const result = await getAllTemplatesWithVersions(request.user.user_id);
+      return { success: true, templates: result.templates };
     } catch (err) {
       return { success: false, error: 'Failed to fetch templates' };
     }

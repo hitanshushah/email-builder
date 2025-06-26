@@ -1,11 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import { Drawer, Stack, Typography, CircularProgress, Button } from '@mui/material';
-import { useSamplesDrawerOpen, resetDocument } from '../../documents/editor/EditorContext';
+import { Drawer, Stack, Typography, CircularProgress, Button, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useSamplesDrawerOpen, setSelectedTemplate, resetDocument, useDocument, setDocument } from '../../documents/editor/EditorContext';
 import SidebarButton from './SidebarButton';
 import { useAuthStore } from '../../stores/authStore';
 import getConfiguration from '../../getConfiguration';
 
 export const SAMPLES_DRAWER_WIDTH = 240;
+
+type GroupedTemplate = {
+  id: number;
+  key: string;
+  display_name: string;
+  versions: any[];
+};
+
+function groupTemplatesByDisplayName(templates: any[]): GroupedTemplate[] {
+  const grouped: Record<number, GroupedTemplate> = {};
+  for (const t of templates) {
+    if (!t.id) continue;
+    if (!grouped[t.id]) {
+      grouped[t.id] = {
+        display_name: t.display_name,
+        key: t.key,
+        id: t.id,
+        versions: [],
+      };
+    }
+    if (t.version_id) {
+      grouped[t.id].versions.push({
+        ...t,
+      });
+    }
+  }
+  return Object.values(grouped);
+}
 
 export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: number }) {
   const samplesDrawerOpen = useSamplesDrawerOpen();
@@ -14,6 +43,8 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | string | null>(null);
+  const [expanded, setExpanded] = useState<number | false>(false);
+  const document = useDocument();
 
   // Sample templates for unauthenticated users
   const sampleTemplates = [
@@ -52,26 +83,57 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
       });
   }, [isAuthenticated, refreshSignal, user?.username]);
 
+  const groupedTemplates: GroupedTemplate[] = groupTemplatesByDisplayName(templates);
+
   const handleLoadTemplate = async (template: any) => {
     try {
-      setSelectedId(template.id);
+      setSelectedId(template.version_id);
       const res = await fetch(`/api/fetch-template?link=${encodeURIComponent(template.link)}`);
       const json = await res.json();
       const doc = json.document ? json.document : json;
       resetDocument(doc);
+      setSelectedTemplate({
+        id: template.id,
+        key: template.key,
+        display_name: template.display_name,
+        file_name: template.file_name,
+        version_no: template.version_no
+      });
     } catch {
       // Optionally show error
     }
   };
 
+  // For empty inside a template accordion
+  const handleTemplateEmpty = (template: GroupedTemplate) => {
+    setSelectedId(`empty-${template.id}`);
+    // Find the latest file_name from versions (if any)
+    const latestVersion = template.versions && template.versions.length > 0 ? template.versions[0] : undefined;
+    setSelectedTemplate({
+      id: template.id,
+      key: template.key,
+      display_name: template.display_name,
+      file_name: latestVersion?.file_name,
+      version_no: 0
+    });
+    // Clear the document
+    setDocument({ root: { type: 'EmailLayout', data: {} } });
+  };
+
   const handleLoadEmpty = () => {
     setSelectedId(0);
+    setSelectedTemplate(null); // Clear selected template
     resetDocument({ root: { type: 'EmailLayout', data: {} } });
   };
 
   const handleLoadSample = (sample) => {
     setSelectedId('sample:' + sample.href);
+    setSelectedTemplate(null); // Clear selected template for samples
     resetDocument(getConfiguration(sample.href));
+  };
+
+  const handleAccordionChange = (panel: number) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
+    setExpanded(isExpanded ? panel : false);
   };
 
   return (
@@ -99,7 +161,7 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
               variant={selectedId === 0 ? 'contained' : 'text'}
               color={selectedId === 0 ? 'primary' : 'inherit'}
             >
-              Empty
+              Create New Template
             </Button>
             {isAuthenticated && (
               <>
@@ -107,19 +169,42 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
                   <CircularProgress size={24} />
                 ) : error ? (
                   <Typography color="error">{error}</Typography>
-                ) : templates.length === 0 ? (
+                ) : groupedTemplates.length === 0 ? (
                   <Typography color="text.secondary">No templates found.</Typography>
                 ) : (
-                  templates.map((template) => (
-                    <Button
+                  groupedTemplates.map((template: GroupedTemplate) => (
+                    <Accordion
                       key={template.id}
-                      onClick={() => handleLoadTemplate(template)}
-                      style={{ textAlign: 'left', width: '100%' }}
-                      variant={selectedId === template.id ? 'contained' : 'text'}
-                      color={selectedId === template.id ? 'primary' : 'inherit'}
+                      expanded={expanded === template.id}
+                      onChange={handleAccordionChange(template.id)}
+                      sx={{ width: '100%' }}
                     >
-                      {template.name}
-                    </Button>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography fontWeight={600}>{template.display_name}</Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Button
+                          key={`empty-${template.id}`}
+                          onClick={() => handleTemplateEmpty(template)}
+                          style={{ textAlign: 'left', width: '100%' }}
+                          variant={selectedId === `empty-${template.id}` ? 'contained' : 'text'}
+                          color={selectedId === `empty-${template.id}` ? 'primary' : 'inherit'}
+                        >
+                          Create New Version
+                        </Button>
+                        {template.versions.map((version) => (
+                          <Button
+                            key={version.version_id}
+                            onClick={() => handleLoadTemplate(version)}
+                            style={{ textAlign: 'left', width: '100%' }}
+                            variant={selectedId === version.version_id ? 'contained' : 'text'}
+                            color={selectedId === version.version_id ? 'primary' : 'inherit'}
+                          >
+                            {version.file_name}_v{version.version_no}
+                          </Button>
+                        ))}
+                      </AccordionDetails>
+                    </Accordion>
                   ))
                 )}
                 <Typography variant="subtitle2" sx={{ p: 0.75, fontWeight: 600, color: '#0079CC' }}>
