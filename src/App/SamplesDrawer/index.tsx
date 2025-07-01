@@ -286,7 +286,7 @@ export default function SamplesDrawer({
     >
       <Stack spacing={3} py={1} px={2} width={SAMPLES_DRAWER_WIDTH} justifyContent="space-between" height="100%">
         <Stack spacing={2}>
-          <Typography variant="h6" component="h1" sx={{ p: 0.75 }}>
+          <Typography variant="h6" component="h1" sx={{ p: 0.75,  color: '#0b2d53' }}>
             Email Builder
           </Typography>
 
@@ -301,7 +301,7 @@ export default function SamplesDrawer({
               sx={{
                 width: 'fit-content !important',
                 border: '1px solid',
-                borderColor: 'divider',
+                borderColor: 'black',
                 color: 'text.primary',
                 bgcolor: 'transparent',
                 paddingY: 0.5,
@@ -372,7 +372,10 @@ export default function SamplesDrawer({
                           onClick={() => handleCategoryToggle(cat.id)}
                           sx={{ display: 'flex', justifyContent: 'space-between' }}
                         >
-                          <ListItemText primary={cat.display_name} />
+                          <ListItemText primary={cat.display_name}  primaryTypographyProps={{
+                            fontWeight: 600,
+                            color: '#0b2d53'
+                          }}/>
                           <ContextMenuButton
                             level="category"
                             onRename={() => setRenameCategoryDialog({ open: true, categoryId: cat.id, currentName: cat.display_name })}
@@ -407,7 +410,9 @@ export default function SamplesDrawer({
                                       sx={{ pl: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                                       onClick={() => setExpanded(isTemplateOpen ? false : template.id)}
                                     >
-                                      <ListItemText primary={`${template.display_name} Template`} />
+                                      <ListItemText primary={`${template.display_name} Template`} primaryTypographyProps={{
+                                        fontWeight: 500,
+                                      }} />
                                       <ContextMenuButton
                                         level="template-in-category"
                                         onRename={() => setRenameTemplateDialog({ open: true, templateId: template.id, currentName: template.display_name })}
@@ -422,17 +427,18 @@ export default function SamplesDrawer({
                                           sx={{
                                             width: 'fit-content !important',
                                             border: '1px solid',
-                                            borderColor: 'divider',
+                                            borderColor: 'black',
                                             color: 'text.primary',
                                             bgcolor: 'transparent',
-                                            paddingY: 0.5,
+                                            paddingY: 0,
+                                            paddingX: 0.5,
                                             borderRadius: 2,
-                                            ml: 4,
+                                            ml: 6
                                           }}
                                           selected={selectedId === `empty-${template.id}`}
                                           onClick={() => handleTemplateEmpty(template)}
                                         >
-                                          <ListItemText primary="Create New Version" />
+                                          <ListItemText primary="Create New Version" primaryTypographyProps={{ fontSize: '11px', fontWeight: 500}}/>
                                         </ListItemButton>
                                         {template.versions.map((version: any) => (
                                           <ListItemButton
@@ -487,7 +493,9 @@ export default function SamplesDrawer({
                   return (
                     <React.Fragment key={template.id}>
                       <ListItemButton onClick={() => setExpanded(isOpen ? false : template.id)}>
-                        <ListItemText primary={template.display_name} />
+                        <ListItemText primary={template.display_name}  primaryTypographyProps={{
+                                        fontWeight: 500,
+                                      }} />
                         <ContextMenuButton
                           level="template"
                           onRename={() => setRenameTemplateDialog({ open: true, templateId: template.id, currentName: template.display_name })}
@@ -501,16 +509,18 @@ export default function SamplesDrawer({
                             sx={{
                               width: 'fit-content !important',
                               border: '1px solid',
-                              borderColor: 'divider',
+                              borderColor: 'black',
                               color: 'text.primary',
                               bgcolor: 'transparent',
-                              paddingY: 0.5,
-                              borderRadius: 2
+                              paddingY: 0,
+                              paddingX: 0.5,
+                              borderRadius: 2,
+                              ml: 4
                             }}
                             selected={selectedId === `empty-${template.id}`}
                             onClick={() => handleTemplateEmpty(template)}
                           >
-                            <ListItemText primary="Create New Version" />
+                            <ListItemText primary="Create New Version" primaryTypographyProps={{ fontSize: '11px', fontWeight: 500}}/>
                           </ListItemButton>
                           {template.versions.map((version) => (
                             <ListItemButton
@@ -538,7 +548,7 @@ export default function SamplesDrawer({
             )}
 
             <ListItemButton onClick={() => setSamplesExpanded(!samplesExpanded)}>
-              <ListItemText primary="Sample Templates" />
+              <ListItemText primary="Sample Templates"  primaryTypographyProps={{ fontWeight: 500 }} />
               {samplesExpanded ? <ExpandLess /> : <ExpandMore />}
             </ListItemButton>
             <Collapse in={samplesExpanded} timeout="auto" unmountOnExit>
