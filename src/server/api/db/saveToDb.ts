@@ -119,7 +119,7 @@ export async function getAllTemplatesWithVersions(userId: number) {
       v.version_no,
       v.created_at as version_created_at
     FROM templates t
-    LEFT JOIN versions v ON t.id = v.template_id
+    LEFT JOIN versions v ON t.id = v.template_id AND v.deleted_at IS NULL
     WHERE t.user_id = $1
     AND t.id NOT IN (
       SELECT DISTINCT template_id 
@@ -144,7 +144,7 @@ export async function getVersionById(versionId: number) {
     SELECT v.*, t.key, t.display_name
     FROM versions v
     JOIN templates t ON v.template_id = t.id
-    WHERE v.id = $1
+    WHERE v.id = $1 AND v.deleted_at IS NULL
   `;
 
   const values = [versionId];
@@ -253,7 +253,7 @@ export async function getTemplatesByCategory(categoryId: number) {
       v.created_at as version_created_at
     FROM templates t
     JOIN template_categories tc ON t.id = tc.template_id
-    LEFT JOIN versions v ON t.id = v.template_id
+    LEFT JOIN versions v ON t.id = v.template_id AND v.deleted_at IS NULL
     WHERE tc.category_id = $1
     ORDER BY t.created_at DESC, v.version_no DESC
   `;
@@ -346,6 +346,46 @@ export async function getTemplatesNotInAnyCategory(userId: number) {
     return { success: true, templates: result.rows };
   } catch (err) {
     console.error('DB Get Templates Not In Any Category Error:', err);
+    throw err;
+  }
+}
+
+export async function renameVersionFileName(versionId: number, newFileName: string) {
+  const query = `
+    UPDATE versions
+    SET file_name = $1, updated_at = NOW()
+    WHERE id = $2
+    RETURNING *;
+  `;
+  const values = [newFileName, versionId];
+  try {
+    const result = await db.query(query, values);
+    if (result && result.rows.length > 0) {
+      return { success: true, version: result.rows[0] };
+    }
+    return { success: false, version: null };
+  } catch (err) {
+    console.error('DB Rename Version File Name Error:', err);
+    throw err;
+  }
+}
+
+export async function softDeleteVersion(versionId: number) {
+  const query = `
+    UPDATE versions
+    SET deleted_at = NOW(), updated_at = NOW()
+    WHERE id = $1
+    RETURNING *;
+  `;
+  const values = [versionId];
+  try {
+    const result = await db.query(query, values);
+    if (result && result.rows.length > 0) {
+      return { success: true, version: result.rows[0] };
+    }
+    return { success: false, version: null };
+  } catch (err) {
+    console.error('DB Soft Delete Version Error:', err);
     throw err;
   }
 }

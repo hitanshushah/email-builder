@@ -47,7 +47,7 @@ function TemplateNameDialog({ open, onClose, onSave, isUpdate = false, currentDi
       return;
     }
     // If using existing name, pass currentFileName
-    const nameToUse = nameChoice === 'existing' ? (currentFileName || '') : value.trim();
+    const nameToUse = nameChoice === 'existing' ? (currentDisplayName || '') : value.trim();
     onSave(nameToUse, undefined, nameChoice === 'existing', saveMode);
     setValue('');
     setError(null);
@@ -112,7 +112,7 @@ function TemplateNameDialog({ open, onClose, onSave, isUpdate = false, currentDi
               <FormControlLabel 
                 value="existing" 
                 control={<Radio />} 
-                label={`Use existing file name (${currentFileName || ''})`} 
+                label={`Use template name (${currentDisplayName || ''})`} 
               />
               <FormControlLabel 
                 value="new" 

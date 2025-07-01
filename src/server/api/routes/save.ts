@@ -10,7 +10,9 @@ import {
   getVersionById,
   updateVersionLink,
   checkCategoryKeyExists,
-  saveNewCategoryToDb
+  saveNewCategoryToDb,
+  renameVersionFileName,
+  softDeleteVersion
 } from '../db/saveToDb';
 import db from '../../../../utils/db';
 
@@ -107,14 +109,7 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
         templateDisplayName = templateResult.template.display_name;
         
         if (useExistingName) {
-          const latestVersionQuery = `
-            SELECT file_name FROM versions 
-            WHERE template_id = $1 
-            ORDER BY version_no DESC 
-            LIMIT 1
-          `;
-          const latestVersionResult = await db.query(latestVersionQuery, [templateId]);
-          fileNameToSave = latestVersionResult.rows[0]?.file_name || templateName;
+          fileNameToSave = templateDisplayName;
         } else {
           fileNameToSave = templateName;
         }
@@ -278,6 +273,46 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
         success: false,
         error: 'Failed to create category'
       });
+    }
+  });
+
+  fastify.post('/rename-version', async (request, reply) => {
+    if (!request.user?.user_id) {
+      return reply.status(401).send({ success: false, error: 'Not authenticated' });
+    }
+    const { versionId, newFileName } = request.body as { versionId: number, newFileName: string };
+    if (!versionId || !newFileName) {
+      return reply.status(400).send({ success: false, error: 'Missing versionId or newFileName' });
+    }
+    try {
+      const result = await renameVersionFileName(versionId, newFileName);
+      if (result.success) {
+        return { success: true, version: result.version };
+      } else {
+        return { success: false, error: 'Rename failed' };
+      }
+    } catch (err) {
+      return { success: false, error: 'Rename failed' };
+    }
+  });
+
+  fastify.post('/delete-version', async (request, reply) => {
+    if (!request.user?.user_id) {
+      return reply.status(401).send({ success: false, error: 'Not authenticated' });
+    }
+    const { versionId } = request.body as { versionId: number };
+    if (!versionId) {
+      return reply.status(400).send({ success: false, error: 'Missing versionId' });
+    }
+    try {
+      const result = await softDeleteVersion(versionId);
+      if (result.success) {
+        return { success: true };
+      } else {
+        return { success: false, error: 'Delete failed' };
+      }
+    } catch (err) {
+      return { success: false, error: 'Delete failed' };
     }
   });
 };

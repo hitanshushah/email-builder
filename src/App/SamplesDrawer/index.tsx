@@ -3,7 +3,7 @@ import {
   Drawer, Stack, Typography, CircularProgress,
   List, ListItemButton, ListItemText, Collapse,
   ListSubheader, Divider, IconButton,
-  Snackbar
+  Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, Button
 } from '@mui/material';
 import { ExpandLess, ExpandMore, AddOutlined } from '@mui/icons-material';
 import AddTemplateToCategoryDialog from './AddTemplateToCategoryDialog';
@@ -17,6 +17,8 @@ import {
 import { useAuthStore } from '../../stores/authStore';
 import getConfiguration from '../../getConfiguration';
 import CreateCategoryDialog from '../TemplatePanel/CreateCategoryDialog';
+import ContextMenuButton from './ContextMenuButton';
+import RenameFileDialog from './RenameFileDialog';
 
 export const SAMPLES_DRAWER_WIDTH = 300;
 
@@ -70,6 +72,8 @@ export default function SamplesDrawer({
   const [addTemplateDialog, setAddTemplateDialog] = useState<{ open: boolean; categoryId: number; categoryName: string } | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [renameDialog, setRenameDialog] = useState<{ open: boolean; versionId: number; currentFileName: string } | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; version: any; templateName: string } | null>(null);
 
   const sampleTemplates = [
     { name: 'Welcome Email', href: '#sample/welcome' },
@@ -235,6 +239,37 @@ export default function SamplesDrawer({
     resetDocument(getConfiguration(sample.href));
   };
 
+  const handleCopyVersion = async (version: any) => {
+    try {
+      const res = await fetch(`/api/fetch-template?link=${encodeURIComponent(version.link)}`);
+      const data = await res.json();
+      const jsonStr = JSON.stringify(data.document ? data.document : data, null, 2);
+      await navigator.clipboard.writeText(jsonStr);
+      setSnackbar({ open: true, message: 'Copied JSON to clipboard!' });
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to copy JSON.' });
+    }
+  };
+
+  const handleDeleteVersion = async (version: any) => {
+    try {
+      const res = await fetch('/api/delete-version', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ versionId: version.version_id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSnackbar({ open: true, message: 'File deleted!' });
+        if (setRefreshSignal) setRefreshSignal(Date.now());
+      } else {
+        setSnackbar({ open: true, message: data.error || 'Delete failed.' });
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Delete failed.' });
+    }
+  };
+
   return (
     <><Drawer
       variant="persistent"
@@ -384,11 +419,17 @@ export default function SamplesDrawer({
                                         {template.versions.map((version: any) => (
                                           <ListItemButton
                                             key={version.version_id}
-                                            sx={{ pl: 6 }}
+                                            sx={{ pl: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                                             selected={selectedId === version.version_id}
                                             onClick={() => handleLoadTemplate(version)}
                                           >
                                             <ListItemText primary={`${version.file_name}_v${version.version_no}`} />
+                                            <ContextMenuButton
+                                              level="file"
+                                              onRename={() => setRenameDialog({ open: true, versionId: version.version_id, currentFileName: version.file_name })}
+                                              onDelete={() => setDeleteDialog({ open: true, version, templateName: template.display_name })}
+                                              onCopy={() => handleCopyVersion(version)}
+                                            />
                                           </ListItemButton>
                                         ))}
                                       </List>
@@ -451,11 +492,17 @@ export default function SamplesDrawer({
                           {template.versions.map((version) => (
                             <ListItemButton
                               key={version.version_id}
-                              sx={{ pl: 4 }}
+                              sx={{ pl: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                               selected={selectedId === version.version_id}
                               onClick={() => handleLoadTemplate(version)}
                             >
                               <ListItemText primary={`${version.file_name}_v${version.version_no}`} />
+                              <ContextMenuButton
+                                level="file"
+                                onRename={() => setRenameDialog({ open: true, versionId: version.version_id, currentFileName: version.file_name })}
+                                onDelete={() => setDeleteDialog({ open: true, version, templateName: template.display_name })}
+                                onCopy={() => handleCopyVersion(version)}
+                              />
                             </ListItemButton>
                           ))}
                         </List>
@@ -508,6 +555,34 @@ export default function SamplesDrawer({
         open={snackbar.open}
         autoHideDuration={3000}
         onClose={() => setSnackbar({ open: false, message: '' })}
-        message={snackbar.message} /></>
+        message={snackbar.message} />
+      {renameDialog && (
+        <RenameFileDialog
+          open={renameDialog.open}
+          onClose={() => setRenameDialog(null)}
+          versionId={renameDialog.versionId}
+          currentFileName={renameDialog.currentFileName}
+          onSuccess={() => {
+            setRenameDialog(null);
+            if (setRefreshSignal) setRefreshSignal(Date.now());
+          }}
+        />
+      )}
+      {deleteDialog && (
+        <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog(null)}>
+          <DialogTitle>Delete File</DialogTitle>
+          <DialogContent>
+            Are you sure you want to delete <b>{deleteDialog.version.file_name}</b> from <b>{deleteDialog.templateName}</b>?
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialog(null)}>Cancel</Button>
+            <Button color="error" variant="contained" onClick={async () => {
+              await handleDeleteVersion(deleteDialog.version);
+              setDeleteDialog(null);
+            }}>Delete</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+    </>
   );
 }
