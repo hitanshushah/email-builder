@@ -141,3 +141,49 @@ export async function getAllTemplatesWithVersions(userId: number) {
     throw err;
   }
 }
+
+// Get version by ID
+export async function getVersionById(versionId: number) {
+  const query = `
+    SELECT v.*, t.key, t.display_name
+    FROM versions v
+    JOIN templates t ON v.template_id = t.id
+    WHERE v.id = $1
+  `;
+
+  const values = [versionId];
+
+  try {
+    const result = await db.query(query, values);
+    if (result.rows.length > 0) {
+      return { success: true, version: result.rows[0] };
+    }
+    return { success: false, version: null };
+  } catch (err) {
+    console.error('DB Get Version Error:', err);
+    throw err;
+  }
+}
+
+// Update version link
+export async function updateVersionLink(versionId: number, newLink: string) {
+  const query = `
+    UPDATE versions 
+    SET link = $1 
+    WHERE id = $2
+    RETURNING *;
+  `;
+
+  const values = [newLink, versionId];
+
+  try {
+    const result = await db.query(query, values);
+    if (result && result.rows.length > 0) {
+      return { success: true, version: result.rows[0] };
+    }
+    return { success: false, version: null };
+  } catch (err) {
+    console.error('DB Update Version Link Error:', err);
+    throw err;
+  }
+}

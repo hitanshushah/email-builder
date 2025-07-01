@@ -39,15 +39,12 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
       return reply.status(400).send({ error: 'Missing link' });
     }
     try {
-      // Parse bucket and object name from the link
-      // Example link: http://localhost:4801/browser/default-bucket/document-1750823153225-akadmin.json
       const match = link.match(/\/([^/]+)\/([^/]+\.json)$/);
       if (!match) {
         return reply.status(400).send({ error: 'Invalid link format' });
       }
       const bucket = match[1];
       const objectName = match[2];
-      console.log('Fetching from MinIO bucket:', bucket, 'object:', objectName);
       const dataStream = await minioClient.getObject(bucket, objectName);
       const chunks: Buffer[] = [];
       for await (const chunk of dataStream as stream.Readable) {

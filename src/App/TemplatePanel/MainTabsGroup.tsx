@@ -16,45 +16,52 @@ import {
 } from '../../documents/editor/EditorContext';
 import { useAuthStore } from '../../stores/authStore';
 
-function TemplateNameDialog({ open, onClose, onSave, isUpdate = false, currentDisplayName, currentFileName }: { 
+function TemplateNameDialog({ open, onClose, onSave, isUpdate = false, currentDisplayName, currentFileName, selectedVersionId }: { 
   open: boolean; 
   onClose: () => void; 
-  onSave: (name: string, templateKey?: string, useExistingName?: boolean) => void;
+  onSave: (name: string, templateKey?: string, useExistingName?: boolean, saveMode?: 'overwrite' | 'new') => void;
   isUpdate?: boolean;
   currentDisplayName?: string;
   currentFileName?: string;
+  selectedVersionId?: number;
 }) {
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [nameChoice, setNameChoice] = useState<'new' | 'existing'>('new');
+  const [saveMode, setSaveMode] = useState<'overwrite' | 'new'>('new');
 
   React.useEffect(() => {
     if (open) {
       setValue('');
       setError(null);
       setNameChoice('new');
+      setSaveMode('new');
     }
   }, [open]);
 
   const handleSave = () => {
-    if (nameChoice === 'new' && !value.trim()) {
+    if (saveMode === 'new' && nameChoice === 'new' && !value.trim()) {
       setError('File name is required.');
       return;
     }
     // If using existing name, pass currentFileName
     const nameToUse = nameChoice === 'existing' ? (currentFileName || '') : value.trim();
-    onSave(nameToUse, undefined, nameChoice === 'existing');
+    onSave(nameToUse, undefined, nameChoice === 'existing', saveMode);
     setValue('');
     setError(null);
     setNameChoice('new');
+    setSaveMode('new');
   };
 
   const handleCancel = () => {
     setValue('');
     setError(null);
     setNameChoice('new');
+    setSaveMode('new');
     onClose();
   };
+
+  const isPreviousVersion = selectedVersionId && selectedVersionId > 0;
 
   return (
     <>
@@ -67,13 +74,34 @@ function TemplateNameDialog({ open, onClose, onSave, isUpdate = false, currentDi
             </Box>
           )}
           <DialogContentText>
-            {isUpdate 
-              ? 'Choose how you want to name this version of the template.'
-              : 'Enter a file name for your template. This will be used to identify your template version.'
+            {isPreviousVersion 
+              ? 'Choose how you want to save your changes to this version.'
+              : isUpdate 
+                ? 'Choose how you want to name this version of the template.'
+                : 'Enter a file name for your template. This will be used to identify your template version.'
             }
           </DialogContentText>
           
-          {isUpdate && (
+          {isPreviousVersion && (
+            <RadioGroup
+              value={saveMode}
+              onChange={(e) => setSaveMode(e.target.value as 'overwrite' | 'new')}
+              sx={{ mb: 2 }}
+            >
+              <FormControlLabel 
+                value="overwrite" 
+                control={<Radio />} 
+                label="Overwrite current version" 
+              />
+              <FormControlLabel 
+                value="new" 
+                control={<Radio />} 
+                label="Create new version" 
+              />
+            </RadioGroup>
+          )}
+          
+          {(!isUpdate || nameChoice === 'new') && saveMode === 'new' && (
             <RadioGroup
               value={nameChoice}
               onChange={(e) => setNameChoice(e.target.value as 'new' | 'existing')}
@@ -92,7 +120,7 @@ function TemplateNameDialog({ open, onClose, onSave, isUpdate = false, currentDi
             </RadioGroup>
           )}
           
-          {(!isUpdate || nameChoice === 'new') && (
+          {(!isUpdate || nameChoice === 'new') && saveMode === 'new' && (
             <TextField
               autoFocus
               margin="dense"
@@ -152,11 +180,24 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
     }
   };
 
-  const handleDialogSave = async (templateName: string, templateKey?: string, useExistingName?: boolean) => {
+  const handleDialogSave = async (templateName: string, templateKey?: string, useExistingName?: boolean, saveMode?: 'overwrite' | 'new') => {
     setDialogOpen(false);
     try {
       // If we have a selected template, use its key for updates
       const keyToUse = templateKey || selectedTemplate?.key;
+      
+      // Don't send templateName when overwriting
+      const requestBody: any = { 
+        document, 
+        templateKey: keyToUse,
+        useExistingName,
+        selectedVersionId: selectedTemplate?.version_id,
+        saveMode
+      };
+      
+      if (saveMode !== 'overwrite') {
+        requestBody.templateName = templateName;
+      }
       
       const res = await fetch('/api/save', {
         method: 'POST',
@@ -164,14 +205,14 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
           'Content-Type': 'application/json',
           ...(user?.username ? { 'x-authentik-username': user.username } : {}),
         },
-        body: JSON.stringify({ 
-          document, 
-          templateName, 
-          templateKey: keyToUse,
-          useExistingName 
-        }),
+        body: JSON.stringify(requestBody),
       });
       const data = await res.json();
+      
+      if (data.noChanges) {
+        setSnackbar({ open: true, message: data.message || 'No changes detected.' });
+        return;
+      }
       
       if (res.status === 409 && data.templateExists) {
         // Template name exists, show error message
@@ -180,15 +221,21 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
       }
       
       if (data.success) {
-        const message = data.isUpdate 
-          ? 'Template updated successfully!' 
-          : 'Template saved successfully!';
+        let message = '';
+        if (data.isOverwrite) {
+          message = 'Template version overwritten successfully!';
+        } else if (data.isUpdate) {
+          message = 'Template updated successfully!';
+        } else {
+          message = 'Template saved successfully!';
+        }
         setSnackbar({ open: true, message });
         if (setRefreshSignal) setRefreshSignal(Date.now());
       } else {
         setSnackbar({ open: true, message: data.error || 'Save failed.' });
       }
     } catch (err) {
+      console.error('Save error:', err);
       setSnackbar({ open: true, message: 'Save failed.' });
     }
   };
@@ -231,7 +278,7 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
         <Tab
           value="save"
           label={
-              <Button size='small' variant="outlined">Save</Button>
+              <Button size='small' variant="contained">Save</Button>
           }
         />
       </Tabs>
@@ -242,6 +289,7 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
         isUpdate={!!selectedTemplate}
         currentDisplayName={selectedTemplate?.display_name}
         currentFileName={latestFileName}
+        selectedVersionId={selectedTemplate?.version_id}
       />
       
       <Snackbar

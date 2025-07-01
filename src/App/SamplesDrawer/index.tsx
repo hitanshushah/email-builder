@@ -97,17 +97,16 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
         key: template.key,
         display_name: template.display_name,
         file_name: template.file_name,
-        version_no: template.version_no
+        version_no: template.version_no,
+        version_id: template.version_id
       });
     } catch {
       // Optionally show error
     }
   };
 
-  // For empty inside a template accordion
   const handleTemplateEmpty = (template: GroupedTemplate) => {
     setSelectedId(`empty-${template.id}`);
-    // Find the latest file_name from versions (if any)
     const latestVersion = template.versions && template.versions.length > 0 ? template.versions[0] : undefined;
     setSelectedTemplate({
       id: template.id,
@@ -116,19 +115,18 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
       file_name: latestVersion?.file_name,
       version_no: 0
     });
-    // Clear the document
     setDocument({ root: { type: 'EmailLayout', data: {} } });
   };
 
   const handleLoadEmpty = () => {
     setSelectedId(0);
-    setSelectedTemplate(null); // Clear selected template
+    setSelectedTemplate(null);
     resetDocument({ root: { type: 'EmailLayout', data: {} } });
   };
 
   const handleLoadSample = (sample) => {
     setSelectedId('sample:' + sample.href);
-    setSelectedTemplate(null); // Clear selected template for samples
+    setSelectedTemplate(null);
     resetDocument(getConfiguration(sample.href));
   };
 
@@ -207,19 +205,28 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
                     </Accordion>
                   ))
                 )}
-                <Typography variant="subtitle2" sx={{ p: 0.75, fontWeight: 600, color: '#0079CC' }}>
-                  Sample Templates
-                </Typography>
-                {sampleTemplates.map((sample, idx) => (
-                  <SidebarButton
-                    key={sample.href}
-                    href={sample.href}
-                    selected={selectedId === 'sample:' + sample.href}
-                    onClick={() => handleLoadSample(sample)}
-                  >
-                    {sample.name}
-                  </SidebarButton>
-                ))}
+                <Accordion
+                  expanded={expanded === -1}
+                  onChange={handleAccordionChange(-1)}
+                  sx={{ width: '100%' }}
+                >
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography fontWeight={600}>Sample Templates</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    {sampleTemplates.map((sample) => (
+                      <Button
+                        key={sample.href}
+                        onClick={() => handleLoadSample(sample)}
+                        style={{ textAlign: 'left', width: '100%' }}
+                        variant={selectedId === 'sample:' + sample.href ? 'contained' : 'text'}
+                        color={selectedId === 'sample:' + sample.href ? 'primary' : 'inherit'}
+                      >
+                        {sample.name}
+                      </Button>
+                    ))}
+                  </AccordionDetails>
+                </Accordion>
               </>
             )}
             {!isAuthenticated && (
