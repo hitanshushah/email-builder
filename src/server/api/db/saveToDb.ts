@@ -184,14 +184,12 @@ export async function updateVersionLink(versionId: number, newLink: string) {
   }
 }
 
-export async function checkCategoryKeyExists(keyName: string) {
+export async function checkCategoryKeyExists(keyName: string, userId: number) {
   const query = `
     SELECT id, key, display_name FROM categories 
-    WHERE key = $1
+    WHERE key = $1 AND user_id = $2
   `;
-
-  const values = [keyName];
-
+  const values = [keyName, userId];
   try {
     const result = await db.query(query, values);
     if (result.rows.length > 0) {
@@ -204,15 +202,13 @@ export async function checkCategoryKeyExists(keyName: string) {
   }
 }
 
-export async function saveNewCategoryToDb(keyName: string, displayName: string) {
+export async function saveNewCategoryToDb(keyName: string, displayName: string, userId: number) {
   const query = `
-    INSERT INTO categories (key, display_name)
-    VALUES ($1, $2)
+    INSERT INTO categories (key, display_name, user_id)
+    VALUES ($1, $2, $3)
     RETURNING *;
   `;
-
-  const values = [keyName, displayName];
-
+  const values = [keyName, displayName, userId];
   try {
     const result = await db.query(query, values);
     if (result && result.rows.length > 0) {
@@ -224,15 +220,16 @@ export async function saveNewCategoryToDb(keyName: string, displayName: string) 
   }
 }
 
-export async function getAllCategories() {
+export async function getAllCategories(userId: number) {
   const query = `
     SELECT id, key, display_name, created_at
     FROM categories
+    WHERE user_id = $1
     ORDER BY display_name ASC
   `;
-
+  const values = [userId];
   try {
-    const result = await db.query(query);
+    const result = await db.query(query, values);
     return { success: true, categories: result.rows };
   } catch (err) {
     console.error('DB Get Categories Error:', err);
@@ -464,6 +461,59 @@ export async function unlinkTemplateFromCategory(templateId: number, categoryId:
     return { success: true, deleted: result.rowCount };
   } catch (err) {
     console.error('DB Unlink Template From Category Error:', err);
+    throw err;
+  }
+}
+
+export async function renameCategoryDisplayName(categoryId: number, newDisplayName: string, userId: number) {
+  const newKey = newDisplayName.toLowerCase().replace(/\s+/g, '');
+  // Check if key exists for this user (excluding this category)
+  const checkQuery = `
+    SELECT id FROM categories WHERE key = $1 AND user_id = $2 AND id != $3 AND deleted_at IS NULL
+  `;
+  const checkResult = await db.query(checkQuery, [newKey, userId, categoryId]);
+  if (checkResult.rows.length > 0) {
+    return { success: false, error: 'Category name already exists.' };
+  }
+  const query = `
+    UPDATE categories
+    SET display_name = $1, key = $2, updated_at = NOW()
+    WHERE id = $3
+    RETURNING *;
+  `;
+  const values = [newDisplayName, newKey, categoryId];
+  try {
+    const result = await db.query(query, values);
+    if (result && result.rows.length > 0) {
+      return { success: true, category: result.rows[0] };
+    }
+    return { success: false, category: null };
+  } catch (err) {
+    console.error('DB Rename Category Display Name Error:', err);
+    throw err;
+  }
+}
+
+export async function softDeleteCategory(categoryId: number) {
+  const categoryQuery = `
+    UPDATE categories
+    SET deleted_at = NOW(), updated_at = NOW()
+    WHERE id = $1
+    RETURNING *;
+  `;
+  const unlinkQuery = `
+    DELETE FROM template_categories
+    WHERE category_id = $1;
+  `;
+  try {
+    const categoryResult = await db.query(categoryQuery, [categoryId]);
+    await db.query(unlinkQuery, [categoryId]);
+    if (categoryResult && categoryResult.rows.length > 0) {
+      return { success: true, category: categoryResult.rows[0] };
+    }
+    return { success: false, category: null };
+  } catch (err) {
+    console.error('DB Soft Delete Category Error:', err);
     throw err;
   }
 }

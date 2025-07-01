@@ -78,6 +78,8 @@ export default function SamplesDrawer({
   const [renameTemplateDialog, setRenameTemplateDialog] = useState<{ open: boolean; templateId: number; currentName: string } | null>(null);
   const [deleteTemplateDialog, setDeleteTemplateDialog] = useState<{ open: boolean; templateId: number; templateName: string } | null>(null);
   const [unlinkDialog, setUnlinkDialog] = useState<{ open: boolean; templateId: number; categoryId: number; templateName: string; categoryName: string } | null>(null);
+  const [renameCategoryDialog, setRenameCategoryDialog] = useState<{ open: boolean; categoryId: number; currentName: string } | null>(null);
+  const [deleteCategoryDialog, setDeleteCategoryDialog] = useState<{ open: boolean; categoryId: number; categoryName: string } | null>(null);
 
   const sampleTemplates = [
     { name: 'Welcome Email', href: '#sample/welcome' },
@@ -370,6 +372,11 @@ export default function SamplesDrawer({
                           sx={{ display: 'flex', justifyContent: 'space-between' }}
                         >
                           <ListItemText primary={cat.display_name} />
+                          <ContextMenuButton
+                            level="category"
+                            onRename={() => setRenameCategoryDialog({ open: true, categoryId: cat.id, currentName: cat.display_name })}
+                            onDelete={() => setDeleteCategoryDialog({ open: true, categoryId: cat.id, categoryName: cat.display_name })}
+                          />
                           <div style={{ display: 'flex', alignItems: 'center' }}>
                             <IconButton
                               size="small"
@@ -682,6 +689,57 @@ export default function SamplesDrawer({
               }
               setUnlinkDialog(null);
             }}>Unlink</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+      {renameCategoryDialog && (
+        <RenameDialog
+          open={renameCategoryDialog.open}
+          onClose={() => setRenameCategoryDialog(null)}
+          currentName={renameCategoryDialog.currentName}
+          label="Category"
+          onRename={async (newName) => {
+            const res = await fetch('/api/rename-category', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ categoryId: renameCategoryDialog.categoryId, newDisplayName: newName }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              setSnackbar({ open: true, message: 'Category renamed!' });
+              if (setRefreshSignal) setRefreshSignal(Date.now());
+            } else if (data.error && data.error.toLowerCase().includes('exists')) {
+              throw new Error('Category name already exists.');
+            } else {
+              throw new Error(data.error || 'Rename failed.');
+            }
+          }}
+        />
+      )}
+      {deleteCategoryDialog && (
+        <Dialog open={deleteCategoryDialog.open} onClose={() => setDeleteCategoryDialog(null)}>
+          <DialogTitle>Delete Category</DialogTitle>
+          <DialogContent>
+            Are you sure you want to delete <b>{deleteCategoryDialog.categoryName}</b>?<br />
+            <b>Warning:</b> This will only remove the category and its links. Templates will not be deleted, just moved to the Templates section.
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteCategoryDialog(null)}>Cancel</Button>
+            <Button color="error" variant="contained" onClick={async () => {
+              const res = await fetch('/api/delete-category', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categoryId: deleteCategoryDialog.categoryId }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                setSnackbar({ open: true, message: 'Category deleted!' });
+                if (setRefreshSignal) setRefreshSignal(Date.now());
+              } else {
+                setSnackbar({ open: true, message: data.error || 'Delete failed.' });
+              }
+              setDeleteCategoryDialog(null);
+            }}>Delete</Button>
           </DialogActions>
         </Dialog>
       )}

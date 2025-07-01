@@ -244,7 +244,7 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
     try {
       const keyName = categoryName.toLowerCase().replace(/\s+/g, '');
       
-      const keyNameCheck = await checkCategoryKeyExists(keyName);
+      const keyNameCheck = await checkCategoryKeyExists(keyName, request.user.user_id);
       
       if (keyNameCheck.exists) {
         return reply.status(409).send({
@@ -255,7 +255,7 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const categoryResult = await saveNewCategoryToDb(keyName, categoryName.trim());
+      const categoryResult = await saveNewCategoryToDb(keyName, categoryName.trim(), request.user.user_id);
       
       if (!categoryResult.success) {
         return reply.status(500).send({
