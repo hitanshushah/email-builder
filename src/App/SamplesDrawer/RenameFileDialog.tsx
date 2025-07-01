@@ -2,52 +2,38 @@ import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, DialogContentText } from '@mui/material';
 import { useAuthStore } from '../../stores/authStore';
 
-interface RenameFileDialogProps {
+interface RenameDialogProps {
   open: boolean;
   onClose: () => void;
-  versionId: number;
-  currentFileName: string;
-  onSuccess?: (newName: string) => void;
+  currentName: string;
+  label?: string;
+  onRename: (newName: string) => Promise<void>;
 }
 
-const RenameFileDialog: React.FC<RenameFileDialogProps> = ({ open, onClose, versionId, currentFileName, onSuccess }) => {
-  const [value, setValue] = useState(currentFileName);
+const RenameDialog: React.FC<RenameDialogProps> = ({ open, onClose, currentName, label = 'Name', onRename }) => {
+  const [value, setValue] = useState(currentName);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuthStore();
 
   React.useEffect(() => {
     if (open) {
-      setValue(currentFileName);
+      setValue(currentName);
       setError(null);
     }
-  }, [open, currentFileName]);
+  }, [open, currentName]);
 
   const handleRename = async () => {
     if (!value.trim()) {
-      setError('File name is required.');
+      setError(`${label} is required.`);
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/rename-version', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(user?.username ? { 'x-authentik-username': user.username } : {}),
-        },
-        body: JSON.stringify({ versionId, newFileName: value.trim() }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        if (onSuccess) onSuccess(value.trim());
-        onClose();
-      } else {
-        setError(data.error || 'Rename failed.');
-      }
-    } catch (err) {
-      setError('Rename failed.');
+      await onRename(value.trim());
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || 'Rename failed.');
     } finally {
       setLoading(false);
     }
@@ -55,13 +41,13 @@ const RenameFileDialog: React.FC<RenameFileDialogProps> = ({ open, onClose, vers
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Rename File</DialogTitle>
+      <DialogTitle>Rename {label}</DialogTitle>
       <DialogContent>
-        <DialogContentText>Enter a new name for this file version.</DialogContentText>
+        <DialogContentText>Enter a new name for this {label.toLowerCase()}.</DialogContentText>
         <TextField
           autoFocus
           margin="dense"
-          label="File Name"
+          label={label}
           type="text"
           fullWidth
           variant="outlined"
@@ -82,4 +68,4 @@ const RenameFileDialog: React.FC<RenameFileDialogProps> = ({ open, onClose, vers
   );
 };
 
-export default RenameFileDialog; 
+export default RenameDialog; 

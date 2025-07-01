@@ -19,6 +19,7 @@ import getConfiguration from '../../getConfiguration';
 import CreateCategoryDialog from '../TemplatePanel/CreateCategoryDialog';
 import ContextMenuButton from './ContextMenuButton';
 import RenameFileDialog from './RenameFileDialog';
+import RenameDialog from './RenameFileDialog';
 
 export const SAMPLES_DRAWER_WIDTH = 300;
 
@@ -74,6 +75,9 @@ export default function SamplesDrawer({
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [renameDialog, setRenameDialog] = useState<{ open: boolean; versionId: number; currentFileName: string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; version: any; templateName: string } | null>(null);
+  const [renameTemplateDialog, setRenameTemplateDialog] = useState<{ open: boolean; templateId: number; currentName: string } | null>(null);
+  const [deleteTemplateDialog, setDeleteTemplateDialog] = useState<{ open: boolean; templateId: number; templateName: string } | null>(null);
+  const [unlinkDialog, setUnlinkDialog] = useState<{ open: boolean; templateId: number; categoryId: number; templateName: string; categoryName: string } | null>(null);
 
   const sampleTemplates = [
     { name: 'Welcome Email', href: '#sample/welcome' },
@@ -392,10 +396,16 @@ export default function SamplesDrawer({
                                 return (
                                   <React.Fragment key={template.id}>
                                     <ListItemButton
-                                      sx={{ pl: 4 }}
+                                      sx={{ pl: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                                       onClick={() => setExpanded(isTemplateOpen ? false : template.id)}
                                     >
                                       <ListItemText primary={`${template.display_name} Template`} />
+                                      <ContextMenuButton
+                                        level="template-in-category"
+                                        onRename={() => setRenameTemplateDialog({ open: true, templateId: template.id, currentName: template.display_name })}
+                                        onDelete={() => setDeleteTemplateDialog({ open: true, templateId: template.id, templateName: template.display_name })}
+                                        onRemoveFromCategory={() => setUnlinkDialog({ open: true, templateId: template.id, categoryId: cat.id, templateName: template.display_name, categoryName: cat.display_name })}
+                                      />
                                       {isTemplateOpen ? <ExpandLess /> : <ExpandMore />}
                                     </ListItemButton>
                                     <Collapse in={isTemplateOpen} timeout="auto" unmountOnExit>
@@ -470,6 +480,11 @@ export default function SamplesDrawer({
                     <React.Fragment key={template.id}>
                       <ListItemButton onClick={() => setExpanded(isOpen ? false : template.id)}>
                         <ListItemText primary={template.display_name} />
+                        <ContextMenuButton
+                          level="template"
+                          onRename={() => setRenameTemplateDialog({ open: true, templateId: template.id, currentName: template.display_name })}
+                          onDelete={() => setDeleteTemplateDialog({ open: true, templateId: template.id, templateName: template.display_name })}
+                        />
                         {isOpen ? <ExpandLess /> : <ExpandMore />}
                       </ListItemButton>
                       <Collapse in={isOpen} timeout="auto" unmountOnExit>
@@ -557,14 +572,24 @@ export default function SamplesDrawer({
         onClose={() => setSnackbar({ open: false, message: '' })}
         message={snackbar.message} />
       {renameDialog && (
-        <RenameFileDialog
+        <RenameDialog
           open={renameDialog.open}
           onClose={() => setRenameDialog(null)}
-          versionId={renameDialog.versionId}
-          currentFileName={renameDialog.currentFileName}
-          onSuccess={() => {
-            setRenameDialog(null);
-            if (setRefreshSignal) setRefreshSignal(Date.now());
+          currentName={renameDialog.currentFileName}
+          label="File"
+          onRename={async (newName) => {
+            const res = await fetch('/api/rename-version', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ versionId: renameDialog.versionId, newFileName: newName }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              setRenameDialog(null);
+              if (setRefreshSignal) setRefreshSignal(Date.now());
+            } else {
+              throw new Error(data.error || 'Rename failed.');
+            }
           }}
         />
       )}
@@ -580,6 +605,83 @@ export default function SamplesDrawer({
               await handleDeleteVersion(deleteDialog.version);
               setDeleteDialog(null);
             }}>Delete</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+      {renameTemplateDialog && (
+        <RenameDialog
+          open={renameTemplateDialog.open}
+          onClose={() => setRenameTemplateDialog(null)}
+          currentName={renameTemplateDialog.currentName}
+          label="Template"
+          onRename={async (newName) => {
+            const res = await fetch('/api/rename-template', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ templateId: renameTemplateDialog.templateId, newDisplayName: newName }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              setSnackbar({ open: true, message: 'Template renamed!' });
+              if (setRefreshSignal) setRefreshSignal(Date.now());
+            } else if (data.error && data.error.toLowerCase().includes('taken')) {
+              throw new Error('Template name already taken.');
+            } else {
+              throw new Error(data.error || 'Rename failed.');
+            }
+          }}
+        />
+      )}
+      {deleteTemplateDialog && (
+        <Dialog open={deleteTemplateDialog.open} onClose={() => setDeleteTemplateDialog(null)}>
+          <DialogTitle>Delete Template</DialogTitle>
+          <DialogContent>
+            Are you sure you want to delete <b>{deleteTemplateDialog.templateName}</b>?<br />
+            <b>Warning:</b> This will delete all its file versions.
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteTemplateDialog(null)}>Cancel</Button>
+            <Button color="error" variant="contained" onClick={async () => {
+              const res = await fetch('/api/delete-template', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ templateId: deleteTemplateDialog.templateId }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                setSnackbar({ open: true, message: 'Template deleted!' });
+                if (setRefreshSignal) setRefreshSignal(Date.now());
+              } else {
+                setSnackbar({ open: true, message: data.error || 'Delete failed.' });
+              }
+              setDeleteTemplateDialog(null);
+            }}>Delete</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+      {unlinkDialog && (
+        <Dialog open={unlinkDialog.open} onClose={() => setUnlinkDialog(null)}>
+          <DialogTitle>Unlink Template</DialogTitle>
+          <DialogContent>
+            Are you sure you want to unlink <b>{unlinkDialog.templateName}</b> from <b>{unlinkDialog.categoryName}</b>?
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setUnlinkDialog(null)}>Cancel</Button>
+            <Button color="error" variant="contained" onClick={async () => {
+              const res = await fetch('/api/unlink-template-category', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ templateId: unlinkDialog.templateId, categoryId: unlinkDialog.categoryId }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                setSnackbar({ open: true, message: 'Template unlinked from category!' });
+                if (setRefreshSignal) setRefreshSignal(Date.now());
+              } else {
+                setSnackbar({ open: true, message: data.error || 'Unlink failed.' });
+              }
+              setUnlinkDialog(null);
+            }}>Unlink</Button>
           </DialogActions>
         </Dialog>
       )}

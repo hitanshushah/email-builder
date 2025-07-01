@@ -121,6 +121,7 @@ export async function getAllTemplatesWithVersions(userId: number) {
     FROM templates t
     LEFT JOIN versions v ON t.id = v.template_id AND v.deleted_at IS NULL
     WHERE t.user_id = $1
+    AND t.deleted_at IS NULL
     AND t.id NOT IN (
       SELECT DISTINCT template_id 
       FROM template_categories
@@ -255,6 +256,7 @@ export async function getTemplatesByCategory(categoryId: number) {
     JOIN template_categories tc ON t.id = tc.template_id
     LEFT JOIN versions v ON t.id = v.template_id AND v.deleted_at IS NULL
     WHERE tc.category_id = $1
+    AND t.deleted_at IS NULL
     ORDER BY t.created_at DESC, v.version_no DESC
   `;
 
@@ -386,6 +388,77 @@ export async function softDeleteVersion(versionId: number) {
     return { success: false, version: null };
   } catch (err) {
     console.error('DB Soft Delete Version Error:', err);
+    throw err;
+  }
+}
+
+export async function renameTemplateDisplayName(templateId: number, newDisplayName: string, userId: number) {
+  const newKeyName = newDisplayName.toLowerCase().replace(/\s+/g, '');
+  // Check if key_name exists for this user (excluding this template)
+  const checkQuery = `
+    SELECT id FROM templates WHERE key_name = $1 AND user_id = $2 AND id != $3 AND deleted_at IS NULL
+  `;
+  const checkResult = await db.query(checkQuery, [newKeyName, userId, templateId]);
+  if (checkResult.rows.length > 0) {
+    return { success: false, error: 'Template name already taken.' };
+  }
+  const query = `
+    UPDATE templates
+    SET display_name = $1, key_name = $2, updated_at = NOW()
+    WHERE id = $3
+    RETURNING *;
+  `;
+  const values = [newDisplayName, newKeyName, templateId];
+  try {
+    const result = await db.query(query, values);
+    if (result && result.rows.length > 0) {
+      return { success: true, template: result.rows[0] };
+    }
+    return { success: false, template: null };
+  } catch (err) {
+    console.error('DB Rename Template Display Name Error:', err);
+    throw err;
+  }
+}
+
+export async function softDeleteTemplate(templateId: number) {
+  const templateQuery = `
+    UPDATE templates
+    SET deleted_at = NOW(), updated_at = NOW()
+    WHERE id = $1
+    RETURNING *;
+  `;
+  const versionQuery = `
+    UPDATE versions
+    SET deleted_at = NOW(), updated_at = NOW()
+    WHERE template_id = $1
+    RETURNING *;
+  `;
+  try {
+    const templateResult = await db.query(templateQuery, [templateId]);
+    await db.query(versionQuery, [templateId]);
+    if (templateResult && templateResult.rows.length > 0) {
+      return { success: true, template: templateResult.rows[0] };
+    }
+    return { success: false, template: null };
+  } catch (err) {
+    console.error('DB Soft Delete Template Error:', err);
+    throw err;
+  }
+}
+
+export async function unlinkTemplateFromCategory(templateId: number, categoryId: number) {
+  const query = `
+    DELETE FROM template_categories
+    WHERE template_id = $1 AND category_id = $2
+    RETURNING *;
+  `;
+  const values = [templateId, categoryId];
+  try {
+    const result = await db.query(query, values);
+    return { success: true, deleted: result.rowCount };
+  } catch (err) {
+    console.error('DB Unlink Template From Category Error:', err);
     throw err;
   }
 }

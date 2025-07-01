@@ -12,7 +12,10 @@ import {
   checkCategoryKeyExists,
   saveNewCategoryToDb,
   renameVersionFileName,
-  softDeleteVersion
+  softDeleteVersion,
+  renameTemplateDisplayName,
+  softDeleteTemplate,
+  unlinkTemplateFromCategory
 } from '../db/saveToDb';
 import db from '../../../../utils/db';
 
@@ -313,6 +316,66 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
       }
     } catch (err) {
       return { success: false, error: 'Delete failed' };
+    }
+  });
+
+  fastify.post('/rename-template', async (request, reply) => {
+    if (!request.user?.user_id) {
+      return reply.status(401).send({ success: false, error: 'Not authenticated' });
+    }
+    const { templateId, newDisplayName } = request.body as { templateId: number, newDisplayName: string };
+    if (!templateId || !newDisplayName) {
+      return reply.status(400).send({ success: false, error: 'Missing templateId or newDisplayName' });
+    }
+    try {
+      const result = await renameTemplateDisplayName(templateId, newDisplayName, request.user.user_id);
+      if (result.success) {
+        return { success: true, template: result.template };
+      } else {
+        return { success: false, error: result.error || 'Rename failed' };
+      }
+    } catch (err) {
+      return { success: false, error: 'Rename failed' };
+    }
+  });
+
+  fastify.post('/delete-template', async (request, reply) => {
+    if (!request.user?.user_id) {
+      return reply.status(401).send({ success: false, error: 'Not authenticated' });
+    }
+    const { templateId } = request.body as { templateId: number };
+    if (!templateId) {
+      return reply.status(400).send({ success: false, error: 'Missing templateId' });
+    }
+    try {
+      const result = await softDeleteTemplate(templateId);
+      if (result.success) {
+        return { success: true };
+      } else {
+        return { success: false, error: 'Delete failed' };
+      }
+    } catch (err) {
+      return { success: false, error: 'Delete failed' };
+    }
+  });
+
+  fastify.post('/unlink-template-category', async (request, reply) => {
+    if (!request.user?.user_id) {
+      return reply.status(401).send({ success: false, error: 'Not authenticated' });
+    }
+    const { templateId, categoryId } = request.body as { templateId: number, categoryId: number };
+    if (!templateId || !categoryId) {
+      return reply.status(400).send({ success: false, error: 'Missing templateId or categoryId' });
+    }
+    try {
+      const result = await unlinkTemplateFromCategory(templateId, categoryId);
+      if (result.success) {
+        return { success: true };
+      } else {
+        return { success: false, error: 'Unlink failed' };
+      }
+    } catch (err) {
+      return { success: false, error: 'Unlink failed' };
     }
   });
 };
