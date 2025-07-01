@@ -21,7 +21,6 @@ const storeUsername: FastifyPluginAsync = async (fastify) => {
       try {
         let result = await db.query('SELECT id FROM users WHERE name = $1', [username]);
         if (result.rows.length === 0) {
-          // User does not exist, insert
           await db.query('INSERT INTO users (name, email) VALUES ($1, $2)', [username, null]);
           result = await db.query('SELECT id FROM users WHERE name = $1', [username]);
         }

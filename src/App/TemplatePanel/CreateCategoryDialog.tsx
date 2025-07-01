@@ -81,9 +81,6 @@ export default function CreateCategoryDialog({ open, onClose, onSuccess }: Creat
     <Dialog open={open} onClose={handleCancel}>
       <DialogTitle>Create New Category</DialogTitle>
       <DialogContent>
-        <DialogContentText>
-          Enter a name for your new category. The name will be converted to lowercase and spaces will be removed for the internal key.
-        </DialogContentText>
         <TextField
           autoFocus
           margin="dense"
@@ -94,7 +91,7 @@ export default function CreateCategoryDialog({ open, onClose, onSuccess }: Creat
           value={categoryName}
           onChange={e => { setCategoryName(e.target.value); setError(null); }}
           error={!!error}
-          helperText={error || "Category names are converted to lowercase and spaces are removed (e.g., 'My Category' becomes 'mycategory')"}
+          helperText={error || "Category names are compared ignoring case and spaces (e.g., 'My Category' and 'my category' are considered the same)"}
           disabled={isLoading}
         />
       </DialogContent>

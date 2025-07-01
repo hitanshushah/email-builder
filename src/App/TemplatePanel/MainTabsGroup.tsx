@@ -318,6 +318,7 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
         onClose={() => setCategoryDialogOpen(false)}
         onSuccess={() => {
           setSnackbar({ open: true, message: 'Category created successfully!' });
+          if (setRefreshSignal) setRefreshSignal(Date.now());
         }}
       />
       

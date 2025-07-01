@@ -41,7 +41,6 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
     const username = request.user.username;
     const userId = request.user.user_id;
 
-    // Only require templateName if not overwriting
     if (!templateName && saveMode !== 'overwrite') {
       return reply.status(400).send({
         success: false,
@@ -53,7 +52,6 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
     const fileName = `document-${Date.now()}-${username}.json`;
     
     try {
-      // If we have a selected version ID, check if content has changed
       if (selectedVersionId) {
         const versionResult = await getVersionById(selectedVersionId);
         if (!versionResult.success || !versionResult.version) {
@@ -63,7 +61,6 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
           });
         }
 
-        // Fetch the original JSON from MinIO
         try {
           const originalJson = await fetchJsonFromMinio(versionResult.version.link);
           const hasChanges = !compareJsonObjects(originalJson, document);
@@ -80,7 +77,6 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
         }
       }
 
-      // Save to MinIO first
       const res = await saveJsonToMinio(bucket, fileName, document);
       
       if (!res) {
@@ -110,7 +106,6 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
         templateId = templateResult.template.id;
         templateDisplayName = templateResult.template.display_name;
         
-        // Use existing file name or new file name based on user choice
         if (useExistingName) {
           const latestVersionQuery = `
             SELECT file_name FROM versions 
@@ -124,7 +119,6 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
           fileNameToSave = templateName;
         }
 
-        // Handle overwrite vs new version logic
         if (selectedVersionId && saveMode === 'overwrite') {
           const updateResult = await updateVersionLink(selectedVersionId, res.url);
           
@@ -149,7 +143,6 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
         } else {
           versionNo = await getNextVersionNumber(templateId);
           
-          // Save new version
           const versionResult = await saveVersionToDb(templateId, fileNameToSave, res.url, versionNo);
           
           if (!versionResult.success) {
@@ -175,7 +168,6 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
       } else {
         const generatedKeyName = generateTemplateKeyName(templateName);
         
-        // Check if template key name already exists for this user
         const keyNameCheck = await checkTemplateKeyNameExists(generatedKeyName, userId);
         
         if (keyNameCheck.exists) {
@@ -202,7 +194,6 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
         versionNo = 1;
         fileNameToSave = templateName;
         
-        // Save first version
         const versionResult = await saveVersionToDb(templateId, fileNameToSave, res.url, versionNo);
         
         if (!versionResult.success) {
@@ -253,10 +244,8 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
     }
 
     try {
-      // Generate key name from category name (same logic as template key generation)
       const keyName = categoryName.toLowerCase().replace(/\s+/g, '');
       
-      // Check if category key already exists
       const keyNameCheck = await checkCategoryKeyExists(keyName);
       
       if (keyNameCheck.exists) {
@@ -268,7 +257,6 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      // Save new category
       const categoryResult = await saveNewCategoryToDb(keyName, categoryName.trim());
       
       if (!categoryResult.success) {

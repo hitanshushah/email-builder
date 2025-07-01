@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import {
   Drawer, Stack, Typography, CircularProgress,
   List, ListItemButton, ListItemText, Collapse,
-  ListSubheader, Divider
+  ListSubheader, Divider, IconButton
 } from '@mui/material';
-import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import { ExpandLess, ExpandMore, AddOutlined } from '@mui/icons-material';
+import AddTemplateToCategoryDialog from './AddTemplateToCategoryDialog';
 import {
   useSamplesDrawerOpen,
   setSelectedTemplate,
@@ -49,10 +50,16 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<number | string | null>(null);
+  const [selectedId, setSelectedId] = useState<number | string | null>(0);
   const [expanded, setExpanded] = useState<number | false>(false);
-  const [samplesExpanded, setSamplesExpanded] = useState(!isAuthenticated); // open by default if not authenticated
+  const [samplesExpanded, setSamplesExpanded] = useState(!isAuthenticated);
   const document = useDocument();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [categoryTemplates, setCategoryTemplates] = useState<Record<number, any[]>>({});
+  const [expandedCategories, setExpandedCategories] = useState<Record<number, boolean>>({});
+  const [addTemplateDialog, setAddTemplateDialog] = useState<{ open: boolean; categoryId: number; categoryName: string } | null>(null);
 
   const sampleTemplates = [
     { name: 'Welcome Email', href: '#sample/welcome' },
@@ -92,7 +99,88 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
       });
   }, [isAuthenticated, refreshSignal, user?.username]);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setCategories([]);
+      return;
+    }
+    setCategoriesLoading(true);
+    setCategoriesError(null);
+    fetch('/api/categories', {
+      headers: user?.username ? { 'x-authentik-username': user.username } : {},
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setCategories(data.categories);
+        } else {
+          setCategoriesError(data.error || 'Failed to fetch categories');
+        }
+        setCategoriesLoading(false);
+      })
+      .catch(() => {
+        setCategoriesError('Failed to fetch categories');
+        setCategoriesLoading(false);
+      });
+  }, [isAuthenticated, refreshSignal, user?.username]);
+
+  useEffect(() => {
+    if (refreshSignal && Object.keys(categoryTemplates).length > 0) {
+      refreshAllCategoryTemplates();
+    }
+  }, [refreshSignal]);
+
+  useEffect(() => {
+    if (refreshSignal) {
+      setCategoryTemplates({});
+      setExpandedCategories({});
+    }
+  }, [refreshSignal]);
+
   const groupedTemplates: GroupedTemplate[] = groupTemplatesByDisplayName(templates);
+
+  const fetchCategoryTemplates = async (categoryId: number) => {
+    try {
+      const res = await fetch(`/api/categories/${categoryId}/templates`);
+      const data = await res.json();
+      if (data.success) {
+        setCategoryTemplates(prev => ({
+          ...prev,
+          [categoryId]: data.templates
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching category templates:', err);
+    }
+  };
+
+  const handleCategoryToggle = (categoryId: number) => {
+    const isExpanded = expandedCategories[categoryId];
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !isExpanded
+    }));
+    
+    if (!isExpanded && !categoryTemplates[categoryId]) {
+      fetchCategoryTemplates(categoryId);
+    }
+  };
+
+  const handleAddTemplateToCategory = (categoryId: number, categoryName: string) => {
+    setAddTemplateDialog({ open: true, categoryId, categoryName });
+  };
+
+  const handleAddTemplateSuccess = () => {
+    if (addTemplateDialog) {
+      fetchCategoryTemplates(addTemplateDialog.categoryId);
+    }
+  };
+
+  const refreshAllCategoryTemplates = () => {
+    Object.keys(categoryTemplates).forEach(categoryId => {
+      fetchCategoryTemplates(parseInt(categoryId));
+    });
+  };
 
   const handleLoadTemplate = async (template: any) => {
     try {
@@ -158,56 +246,163 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
             <ListItemButton
               selected={selectedId === 0}
               onClick={handleLoadEmpty}
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                mx: 1,
+                my: 1,
+                color: 'text.primary',
+                bgcolor: 'transparent',
+              }}
             >
               <ListItemText primary="Create New Template" />
             </ListItemButton>
-
             {isAuthenticated && (
               <>
-                {loading ? (
-                  <CircularProgress size={24} />
-                ) : error ? (
-                  <Typography color="error">{error}</Typography>
-                ) : groupedTemplates.length === 0 ? (
-                  <Typography color="text.secondary" sx={{ px: 1 }}>No templates found.</Typography>
+                <ListSubheader component="div"
+                  sx={{
+                    fontWeight: 'bold',
+                    color: '#1565C0'
+                  }}
+                >
+                  Categories
+                </ListSubheader>
+                {categoriesLoading ? (
+                  <CircularProgress size={20} />
+                ) : categoriesError ? (
+                  <Typography color="error" sx={{ px: 1 }}>{categoriesError}</Typography>
+                ) : categories.length === 0 ? (
+                  <Typography color="text.secondary" sx={{ px: 1 }}>No categories found.</Typography>
                 ) : (
-                  <>
-                    <ListSubheader component="div">Your Templates</ListSubheader>
-                    {groupedTemplates.map((template) => {
-                      const isOpen = expanded === template.id;
-                      return (
-                        <React.Fragment key={template.id}>
-                          <ListItemButton onClick={() => setExpanded(isOpen ? false : template.id)}>
-                            <ListItemText primary={template.display_name} />
-                            {isOpen ? <ExpandLess /> : <ExpandMore />}
-                          </ListItemButton>
-                          <Collapse in={isOpen} timeout="auto" unmountOnExit>
-                            <List component="div" disablePadding>
-                              <ListItemButton
-                                sx={{ pl: 4 }}
-                                selected={selectedId === `empty-${template.id}`}
-                                onClick={() => handleTemplateEmpty(template)}
-                              >
-                                <ListItemText primary="Create New Version" />
+                  categories.map((cat) => {
+                    const isExpanded = expandedCategories[cat.id];
+                    const templates = categoryTemplates[cat.id] || [];
+                    const groupedCategoryTemplates = groupTemplatesByDisplayName(templates);
+                    
+                    return (
+                      <React.Fragment key={cat.id}>
+                        <ListItemButton 
+                          onClick={() => handleCategoryToggle(cat.id)}
+                          sx={{ display: 'flex', justifyContent: 'space-between' }}
+                        >
+                          <ListItemText primary={cat.display_name} />
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddTemplateToCategory(cat.id, cat.display_name);
+                              }}
+                              sx={{ mr: 1 }}
+                            >
+                              <AddOutlined fontSize="small" />
+                            </IconButton>
+                            {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                          </div>
+                        </ListItemButton>
+                        <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                          <List component="div" disablePadding>
+                            {groupedCategoryTemplates.length === 0 ? (
+                              <ListItemButton sx={{ pl: 4 }} disabled>
+                                <ListItemText primary="No templates in this category" />
                               </ListItemButton>
-                              {template.versions.map((version) => (
-                                <ListItemButton
-                                  key={version.version_id}
-                                  sx={{ pl: 4 }}
-                                  selected={selectedId === version.version_id}
-                                  onClick={() => handleLoadTemplate(version)}
-                                >
-                                  <ListItemText primary={`${version.file_name}_v${version.version_no}`} />
-                                </ListItemButton>
-                              ))}
-                            </List>
-                          </Collapse>
-                          <Divider />
-                        </React.Fragment>
-                      );
-                    })}
-                  </>
+                            ) : (
+                              groupedCategoryTemplates.map((template) => {
+                                const isTemplateOpen = expanded === template.id;
+                                return (
+                                  <React.Fragment key={template.id}>
+                                    <ListItemButton 
+                                      sx={{ pl: 4 }}
+                                      onClick={() => setExpanded(isTemplateOpen ? false : template.id)}
+                                    >
+                                      <ListItemText primary={template.display_name} />
+                                      {isTemplateOpen ? <ExpandLess /> : <ExpandMore />}
+                                    </ListItemButton>
+                                    <Collapse in={isTemplateOpen} timeout="auto" unmountOnExit>
+                                      <List component="div" disablePadding>
+                                        <ListItemButton
+                                          sx={{ pl: 6 }}
+                                          selected={selectedId === `empty-${template.id}`}
+                                          onClick={() => handleTemplateEmpty(template)}
+                                        >
+                                          <ListItemText primary="Create New Version" />
+                                        </ListItemButton>
+                                        {template.versions.map((version: any) => (
+                                          <ListItemButton
+                                            key={version.version_id}
+                                            sx={{ pl: 6 }}
+                                            selected={selectedId === version.version_id}
+                                            onClick={() => handleLoadTemplate(version)}
+                                          >
+                                            <ListItemText primary={`${version.file_name}_v${version.version_no}`} />
+                                          </ListItemButton>
+                                        ))}
+                                      </List>
+                                    </Collapse>
+                                  </React.Fragment>
+                                );
+                              })
+                            )}
+                          </List>
+                        </Collapse>
+                      </React.Fragment>
+                    );
+                  })
                 )}
+                <Divider sx={{ my: 1 }} />
+              </>
+            )}
+
+            {loading ? (
+              <CircularProgress size={24} />
+            ) : error ? (
+              <Typography color="error">{error}</Typography>
+            ) : groupedTemplates.length === 0 ? (
+              <Typography color="text.secondary" sx={{ px: 1 }}>No templates found.</Typography>
+            ) : (
+              <>
+                <ListSubheader component="div"
+                  sx={{
+                    fontWeight: 'bold',
+                    color: '#1565C0'
+                  }}
+                >
+                  Templates
+                </ListSubheader>
+                {groupedTemplates.map((template) => {
+                  const isOpen = expanded === template.id;
+                  return (
+                    <React.Fragment key={template.id}>
+                      <ListItemButton onClick={() => setExpanded(isOpen ? false : template.id)}>
+                        <ListItemText primary={template.display_name} />
+                        {isOpen ? <ExpandLess /> : <ExpandMore />}
+                      </ListItemButton>
+                      <Collapse in={isOpen} timeout="auto" unmountOnExit>
+                        <List component="div" disablePadding>
+                          <ListItemButton
+                            sx={{ pl: 4 }}
+                            selected={selectedId === `empty-${template.id}`}
+                            onClick={() => handleTemplateEmpty(template)}
+                          >
+                            <ListItemText primary="Create New Version" />
+                          </ListItemButton>
+                          {template.versions.map((version) => (
+                            <ListItemButton
+                              key={version.version_id}
+                              sx={{ pl: 4 }}
+                              selected={selectedId === version.version_id}
+                              onClick={() => handleLoadTemplate(version)}
+                            >
+                              <ListItemText primary={`${version.file_name}_v${version.version_no}`} />
+                            </ListItemButton>
+                          ))}
+                        </List>
+                      </Collapse>
+                      <Divider />
+                    </React.Fragment>
+                  );
+                })}
               </>
             )}
 
@@ -232,6 +427,16 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
           </List>
         </Stack>
       </Stack>
+      
+      {addTemplateDialog && (
+        <AddTemplateToCategoryDialog
+          open={addTemplateDialog.open}
+          onClose={() => setAddTemplateDialog(null)}
+          categoryId={addTemplateDialog.categoryId}
+          categoryName={addTemplateDialog.categoryName}
+          onSuccess={handleAddTemplateSuccess}
+        />
+      )}
     </Drawer>
   );
 }

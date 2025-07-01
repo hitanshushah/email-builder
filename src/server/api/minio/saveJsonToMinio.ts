@@ -35,8 +35,6 @@ export async function deleteFileFromMinio(bucket: string, fileName: string) {
 
 export async function extractFileNameFromLink(link: string): Promise<string | null> {
     try {
-        // Parse bucket and object name from the link
-        // Example link: http://localhost:4801/browser/default-bucket/document-1750823153225-akadmin.json
         const match = link.match(/\/([^/]+\.json)$/);
         if (match) {
             return match[1];
@@ -48,11 +46,8 @@ export async function extractFileNameFromLink(link: string): Promise<string | nu
     }
 }
 
-// Fetch JSON data from MinIO for comparison
 export async function fetchJsonFromMinio(link: string): Promise<any> {
     try {
-        // Parse bucket and object name from the link
-        // Example link: http://localhost:4801/browser/default-bucket/document-1750823153225-akadmin.json
         const match = link.match(/\/([^/]+)\/([^/]+\.json)$/);
         if (!match) {
             throw new Error('Invalid link format');
@@ -73,7 +68,6 @@ export async function fetchJsonFromMinio(link: string): Promise<any> {
     }
 }
 
-// Compare two JSON objects for equality
 export function compareJsonObjects(obj1: any, obj2: any): boolean {
     try {
         const json1 = JSON.stringify(obj1, null, 2);
