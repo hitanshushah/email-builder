@@ -280,19 +280,18 @@ export async function getTemplatesNotInCategory(categoryId: number, userId: numb
     WHERE t.user_id = $1
     AND t.id NOT IN (
       SELECT template_id 
-      FROM template_categories 
-      WHERE category_id = $2
+      FROM template_categories
     )
     ORDER BY t.display_name ASC
   `;
 
-  const values = [userId, categoryId];
+  const values = [userId];
 
   try {
     const result = await db.query(query, values);
     return { success: true, templates: result.rows };
   } catch (err) {
-    console.error('DB Get Templates Not In Category Error:', err);
+    console.error('DB Get Templates Not In Any Category Error:', err);
     throw err;
   }
 }

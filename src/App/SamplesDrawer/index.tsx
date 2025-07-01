@@ -360,7 +360,7 @@ export default function SamplesDrawer({
                                       sx={{ pl: 4 }}
                                       onClick={() => setExpanded(isTemplateOpen ? false : template.id)}
                                     >
-                                      <ListItemText primary={template.display_name} />
+                                      <ListItemText primary={`${template.display_name} Template`} />
                                       {isTemplateOpen ? <ExpandLess /> : <ExpandMore />}
                                     </ListItemButton>
                                     <Collapse in={isTemplateOpen} timeout="auto" unmountOnExit>
