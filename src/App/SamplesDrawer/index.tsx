@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   Drawer, Stack, Typography, CircularProgress,
   List, ListItemButton, ListItemText, Collapse,
-  ListSubheader, Divider, IconButton
+  ListSubheader, Divider, IconButton,
+  Snackbar
 } from '@mui/material';
 import { ExpandLess, ExpandMore, AddOutlined } from '@mui/icons-material';
 import AddTemplateToCategoryDialog from './AddTemplateToCategoryDialog';
@@ -15,8 +16,9 @@ import {
 } from '../../documents/editor/EditorContext';
 import { useAuthStore } from '../../stores/authStore';
 import getConfiguration from '../../getConfiguration';
+import CreateCategoryDialog from '../TemplatePanel/CreateCategoryDialog';
 
-export const SAMPLES_DRAWER_WIDTH = 240;
+export const SAMPLES_DRAWER_WIDTH = 300;
 
 type GroupedTemplate = {
   id: number;
@@ -44,7 +46,13 @@ function groupTemplatesByDisplayName(templates: any[]): GroupedTemplate[] {
   return Object.values(grouped);
 }
 
-export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: number }) {
+export default function SamplesDrawer({
+  refreshSignal,
+  setRefreshSignal,
+}: {
+  refreshSignal?: number;
+  setRefreshSignal?: (n: number) => void;
+}) {
   const samplesDrawerOpen = useSamplesDrawerOpen();
   const { isAuthenticated, user } = useAuthStore();
   const [templates, setTemplates] = useState<any[]>([]);
@@ -60,6 +68,8 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
   const [categoryTemplates, setCategoryTemplates] = useState<Record<number, any[]>>({});
   const [expandedCategories, setExpandedCategories] = useState<Record<number, boolean>>({});
   const [addTemplateDialog, setAddTemplateDialog] = useState<{ open: boolean; categoryId: number; categoryName: string } | null>(null);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
 
   const sampleTemplates = [
     { name: 'Welcome Email', href: '#sample/welcome' },
@@ -226,7 +236,7 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
   };
 
   return (
-    <Drawer
+    <><Drawer
       variant="persistent"
       anchor="left"
       open={samplesDrawerOpen}
@@ -247,13 +257,13 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
               selected={selectedId === 0}
               onClick={handleLoadEmpty}
               sx={{
+                width: 'fit-content !important',
                 border: '1px solid',
                 borderColor: 'divider',
-                borderRadius: 1,
-                mx: 1,
-                my: 1,
                 color: 'text.primary',
                 bgcolor: 'transparent',
+                paddingY: 0.5,
+                borderRadius: 2
               }}
             >
               <ListItemText primary="Create New Template" />
@@ -267,22 +277,56 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
                   }}
                 >
                   Categories
+                  {categories.length > 0 && (
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          setSnackbar({ open: true, message: 'Please login to create category' });
+                          return;
+                        }
+                        setCategoryDialogOpen(true);
+                      }}
+                      sx={{ color: '#1565C0' }}
+                    >
+                      <AddOutlined fontSize="small" />
+                    </IconButton>
+                  )}
                 </ListSubheader>
                 {categoriesLoading ? (
                   <CircularProgress size={20} />
                 ) : categoriesError ? (
                   <Typography color="error" sx={{ px: 1 }}>{categoriesError}</Typography>
                 ) : categories.length === 0 ? (
-                  <Typography color="text.secondary" sx={{ px: 1 }}>No categories found.</Typography>
+                  <ListItemButton
+                    sx={{
+                      width: 'fit-content !important',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      color: 'text.secondary',
+                      bgcolor: 'transparent',
+                      paddingY: 0.5,
+                      borderRadius: 2,
+                    }}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        setSnackbar({ open: true, message: 'Please login to create category' });
+                        return;
+                      }
+                      setCategoryDialogOpen(true);
+                    } }
+                  >
+                    <ListItemText primary="Create New Category" />
+                  </ListItemButton>
                 ) : (
                   categories.map((cat) => {
                     const isExpanded = expandedCategories[cat.id];
                     const templates = categoryTemplates[cat.id] || [];
                     const groupedCategoryTemplates = groupTemplatesByDisplayName(templates);
-                    
+
                     return (
                       <React.Fragment key={cat.id}>
-                        <ListItemButton 
+                        <ListItemButton
                           onClick={() => handleCategoryToggle(cat.id)}
                           sx={{ display: 'flex', justifyContent: 'space-between' }}
                         >
@@ -293,7 +337,7 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleAddTemplateToCategory(cat.id, cat.display_name);
-                              }}
+                              } }
                               sx={{ mr: 1 }}
                             >
                               <AddOutlined fontSize="small" />
@@ -312,7 +356,7 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
                                 const isTemplateOpen = expanded === template.id;
                                 return (
                                   <React.Fragment key={template.id}>
-                                    <ListItemButton 
+                                    <ListItemButton
                                       sx={{ pl: 4 }}
                                       onClick={() => setExpanded(isTemplateOpen ? false : template.id)}
                                     >
@@ -322,7 +366,16 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
                                     <Collapse in={isTemplateOpen} timeout="auto" unmountOnExit>
                                       <List component="div" disablePadding>
                                         <ListItemButton
-                                          sx={{ pl: 6 }}
+                                          sx={{
+                                            width: 'fit-content !important',
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                            color: 'text.primary',
+                                            bgcolor: 'transparent',
+                                            paddingY: 0.5,
+                                            borderRadius: 2,
+                                            ml: 4,
+                                          }}
                                           selected={selectedId === `empty-${template.id}`}
                                           onClick={() => handleTemplateEmpty(template)}
                                         >
@@ -381,7 +434,15 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
                       <Collapse in={isOpen} timeout="auto" unmountOnExit>
                         <List component="div" disablePadding>
                           <ListItemButton
-                            sx={{ pl: 4 }}
+                            sx={{
+                              width: 'fit-content !important',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              color: 'text.primary',
+                              bgcolor: 'transparent',
+                              paddingY: 0.5,
+                              borderRadius: 2
+                            }}
                             selected={selectedId === `empty-${template.id}`}
                             onClick={() => handleTemplateEmpty(template)}
                           >
@@ -427,16 +488,26 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
           </List>
         </Stack>
       </Stack>
-      
+
       {addTemplateDialog && (
         <AddTemplateToCategoryDialog
           open={addTemplateDialog.open}
           onClose={() => setAddTemplateDialog(null)}
           categoryId={addTemplateDialog.categoryId}
           categoryName={addTemplateDialog.categoryName}
-          onSuccess={handleAddTemplateSuccess}
-        />
+          onSuccess={handleAddTemplateSuccess} />
       )}
-    </Drawer>
+    </Drawer><CreateCategoryDialog
+        open={categoryDialogOpen}
+        onClose={() => setCategoryDialogOpen(false)}
+        onSuccess={() => {
+          setSnackbar({ open: true, message: 'Category created successfully!' });
+          if (setRefreshSignal) setRefreshSignal(Date.now());
+        } } /><Snackbar
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ open: false, message: '' })}
+        message={snackbar.message} /></>
   );
 }

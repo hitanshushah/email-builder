@@ -30,7 +30,7 @@ export default function App() {
   return (
     <>
       <InspectorDrawer />
-      <SamplesDrawer refreshSignal={refreshSignal} />
+      <SamplesDrawer refreshSignal={refreshSignal} setRefreshSignal={setRefreshSignal}/>
 
       {/* User info header */}
       {isAuthenticated && user && (
