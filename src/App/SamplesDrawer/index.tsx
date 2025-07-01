@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Drawer, Stack, Typography, CircularProgress, Button, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useSamplesDrawerOpen, setSelectedTemplate, resetDocument, useDocument, setDocument } from '../../documents/editor/EditorContext';
-import SidebarButton from './SidebarButton';
+import {
+  Drawer, Stack, Typography, CircularProgress,
+  List, ListItemButton, ListItemText, Collapse,
+  ListSubheader, Divider
+} from '@mui/material';
+import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import {
+  useSamplesDrawerOpen,
+  setSelectedTemplate,
+  resetDocument,
+  useDocument,
+  setDocument
+} from '../../documents/editor/EditorContext';
 import { useAuthStore } from '../../stores/authStore';
 import getConfiguration from '../../getConfiguration';
 
@@ -28,9 +37,7 @@ function groupTemplatesByDisplayName(templates: any[]): GroupedTemplate[] {
       };
     }
     if (t.version_id) {
-      grouped[t.id].versions.push({
-        ...t,
-      });
+      grouped[t.id].versions.push({ ...t });
     }
   }
   return Object.values(grouped);
@@ -44,9 +51,9 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | string | null>(null);
   const [expanded, setExpanded] = useState<number | false>(false);
+  const [samplesExpanded, setSamplesExpanded] = useState(!isAuthenticated); // open by default if not authenticated
   const document = useDocument();
 
-  // Sample templates for unauthenticated users
   const sampleTemplates = [
     { name: 'Welcome Email', href: '#sample/welcome' },
     { name: 'One-time passcode (OTP)', href: '#sample/one-time-password' },
@@ -61,10 +68,12 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
   useEffect(() => {
     if (!isAuthenticated) {
       setTemplates([]);
+      setSamplesExpanded(true);
       return;
     }
     setLoading(true);
     setError(null);
+    setSamplesExpanded(false);
     fetch('/api/user-templates', {
       headers: user?.username ? { 'x-authentik-username': user.username } : {},
     })
@@ -100,14 +109,12 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
         version_no: template.version_no,
         version_id: template.version_id
       });
-    } catch {
-      // Optionally show error
-    }
+    } catch {}
   };
 
   const handleTemplateEmpty = (template: GroupedTemplate) => {
     setSelectedId(`empty-${template.id}`);
-    const latestVersion = template.versions && template.versions.length > 0 ? template.versions[0] : undefined;
+    const latestVersion = template.versions?.[0];
     setSelectedTemplate({
       id: template.id,
       key: template.key,
@@ -124,14 +131,10 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
     resetDocument({ root: { type: 'EmailLayout', data: {} } });
   };
 
-  const handleLoadSample = (sample) => {
+  const handleLoadSample = (sample: any) => {
     setSelectedId('sample:' + sample.href);
     setSelectedTemplate(null);
     resetDocument(getConfiguration(sample.href));
-  };
-
-  const handleAccordionChange = (panel: number) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
-    setExpanded(isExpanded ? panel : false);
   };
 
   return (
@@ -142,25 +145,23 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
       sx={{ width: samplesDrawerOpen ? SAMPLES_DRAWER_WIDTH : 0 }}
     >
       <Stack spacing={3} py={1} px={2} width={SAMPLES_DRAWER_WIDTH} justifyContent="space-between" height="100%">
-        <Stack spacing={2} sx={{ '& .MuiButtonBase-root': { width: '100%', justifyContent: 'flex-start' } }}>
+        <Stack spacing={2}>
           <Typography variant="h6" component="h1" sx={{ p: 0.75 }}>
             Email Builder
           </Typography>
-          {isAuthenticated && (
-            <Typography variant="subtitle2" sx={{ p: 0.75, fontWeight: 600, color: '#0079CC' }}>
-            Your Templates
-          </Typography>
-          )}
-          <Stack alignItems="flex-start">
-            <Button
-              key={0}
+
+          <List
+            sx={{ width: '100%', bgcolor: 'background.paper' }}
+            component="nav"
+            aria-labelledby="template-list"
+          >
+            <ListItemButton
+              selected={selectedId === 0}
               onClick={handleLoadEmpty}
-              style={{ textAlign: 'left', width: '100%' }}
-              variant={selectedId === 0 ? 'contained' : 'text'}
-              color={selectedId === 0 ? 'primary' : 'inherit'}
             >
-              Create New Template
-            </Button>
+              <ListItemText primary="Create New Template" />
+            </ListItemButton>
+
             {isAuthenticated && (
               <>
                 {loading ? (
@@ -168,85 +169,67 @@ export default function SamplesDrawer({ refreshSignal }: { refreshSignal?: numbe
                 ) : error ? (
                   <Typography color="error">{error}</Typography>
                 ) : groupedTemplates.length === 0 ? (
-                  <Typography color="text.secondary">No templates found.</Typography>
+                  <Typography color="text.secondary" sx={{ px: 1 }}>No templates found.</Typography>
                 ) : (
-                  groupedTemplates.map((template: GroupedTemplate) => (
-                    <Accordion
-                      key={template.id}
-                      expanded={expanded === template.id}
-                      onChange={handleAccordionChange(template.id)}
-                      sx={{ width: '100%' }}
-                    >
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography fontWeight={600}>{template.display_name}</Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Button
-                          key={`empty-${template.id}`}
-                          onClick={() => handleTemplateEmpty(template)}
-                          style={{ textAlign: 'left', width: '100%' }}
-                          variant={selectedId === `empty-${template.id}` ? 'contained' : 'text'}
-                          color={selectedId === `empty-${template.id}` ? 'primary' : 'inherit'}
-                        >
-                          Create New Version
-                        </Button>
-                        {template.versions.map((version) => (
-                          <Button
-                            key={version.version_id}
-                            onClick={() => handleLoadTemplate(version)}
-                            style={{ textAlign: 'left', width: '100%' }}
-                            variant={selectedId === version.version_id ? 'contained' : 'text'}
-                            color={selectedId === version.version_id ? 'primary' : 'inherit'}
-                          >
-                            {version.file_name}_v{version.version_no}
-                          </Button>
-                        ))}
-                      </AccordionDetails>
-                    </Accordion>
-                  ))
+                  <>
+                    <ListSubheader component="div">Your Templates</ListSubheader>
+                    {groupedTemplates.map((template) => {
+                      const isOpen = expanded === template.id;
+                      return (
+                        <React.Fragment key={template.id}>
+                          <ListItemButton onClick={() => setExpanded(isOpen ? false : template.id)}>
+                            <ListItemText primary={template.display_name} />
+                            {isOpen ? <ExpandLess /> : <ExpandMore />}
+                          </ListItemButton>
+                          <Collapse in={isOpen} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding>
+                              <ListItemButton
+                                sx={{ pl: 4 }}
+                                selected={selectedId === `empty-${template.id}`}
+                                onClick={() => handleTemplateEmpty(template)}
+                              >
+                                <ListItemText primary="Create New Version" />
+                              </ListItemButton>
+                              {template.versions.map((version) => (
+                                <ListItemButton
+                                  key={version.version_id}
+                                  sx={{ pl: 4 }}
+                                  selected={selectedId === version.version_id}
+                                  onClick={() => handleLoadTemplate(version)}
+                                >
+                                  <ListItemText primary={`${version.file_name}_v${version.version_no}`} />
+                                </ListItemButton>
+                              ))}
+                            </List>
+                          </Collapse>
+                          <Divider />
+                        </React.Fragment>
+                      );
+                    })}
+                  </>
                 )}
-                <Accordion
-                  expanded={expanded === -1}
-                  onChange={handleAccordionChange(-1)}
-                  sx={{ width: '100%' }}
-                >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography fontWeight={600}>Sample Templates</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    {sampleTemplates.map((sample) => (
-                      <Button
-                        key={sample.href}
-                        onClick={() => handleLoadSample(sample)}
-                        style={{ textAlign: 'left', width: '100%' }}
-                        variant={selectedId === 'sample:' + sample.href ? 'contained' : 'text'}
-                        color={selectedId === 'sample:' + sample.href ? 'primary' : 'inherit'}
-                      >
-                        {sample.name}
-                      </Button>
-                    ))}
-                  </AccordionDetails>
-                </Accordion>
               </>
             )}
-            {!isAuthenticated && (
-              <>
-                <Typography variant="subtitle2" sx={{ p: 0.75, fontWeight: 600, color: '#0079CC' }}>
-                  Sample Templates
-                </Typography>
-                {sampleTemplates.map((sample, idx) => (
-                  <SidebarButton
+
+            <ListItemButton onClick={() => setSamplesExpanded(!samplesExpanded)}>
+              <ListItemText primary="Sample Templates" />
+              {samplesExpanded ? <ExpandLess /> : <ExpandMore />}
+            </ListItemButton>
+            <Collapse in={samplesExpanded} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding>
+                {sampleTemplates.map((sample) => (
+                  <ListItemButton
                     key={sample.href}
-                    href={sample.href}
+                    sx={{ pl: 4 }}
                     selected={selectedId === 'sample:' + sample.href}
                     onClick={() => handleLoadSample(sample)}
                   >
-                    {sample.name}
-                  </SidebarButton>
+                    <ListItemText primary={sample.name} />
+                  </ListItemButton>
                 ))}
-              </>
-            )}
-          </Stack>
+              </List>
+            </Collapse>
+          </List>
         </Stack>
       </Stack>
     </Drawer>
