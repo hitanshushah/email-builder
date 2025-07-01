@@ -8,7 +8,9 @@ import {
   saveVersionToDb,
   generateTemplateKeyName,
   getVersionById,
-  updateVersionLink
+  updateVersionLink,
+  checkCategoryKeyExists,
+  saveNewCategoryToDb
 } from '../db/saveToDb';
 import db from '../../../../utils/db';
 
@@ -230,6 +232,64 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
         file: fileName,
         username: username
       };
+    }
+  });
+
+  fastify.post('/create-category', async (request, reply) => {
+    if (!request.user?.username || !request.user?.user_id) {
+      return reply.status(401).send({ 
+        success: false, 
+        error: 'Authentication required' 
+      });
+    }
+
+    const { categoryName } = request.body as { categoryName: string };
+    
+    if (!categoryName || !categoryName.trim()) {
+      return reply.status(400).send({
+        success: false,
+        error: 'Category name is required'
+      });
+    }
+
+    try {
+      // Generate key name from category name (same logic as template key generation)
+      const keyName = categoryName.toLowerCase().replace(/\s+/g, '');
+      
+      // Check if category key already exists
+      const keyNameCheck = await checkCategoryKeyExists(keyName);
+      
+      if (keyNameCheck.exists) {
+        return reply.status(409).send({
+          success: false,
+          error: 'Category name already exists. Please use a different name.',
+          categoryExists: true,
+          existingCategory: keyNameCheck.category
+        });
+      }
+
+      // Save new category
+      const categoryResult = await saveNewCategoryToDb(keyName, categoryName.trim());
+      
+      if (!categoryResult.success) {
+        return reply.status(500).send({
+          success: false,
+          error: 'Failed to save category to database'
+        });
+      }
+
+      return reply.status(200).send({
+        success: true,
+        category: categoryResult.category,
+        message: 'Category created successfully!'
+      });
+
+    } catch (error) {
+      console.error('Create Category Error:', error);
+      return reply.status(500).send({
+        success: false,
+        error: 'Failed to create category'
+      });
     }
   });
 };

@@ -5,8 +5,10 @@ import {
   DataObjectOutlined,
   EditOutlined,
   PreviewOutlined,
+  AddOutlined,
 } from '@mui/icons-material';
 import { Button, Tab, Tabs, Tooltip, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, TextField, DialogContentText, Box, FormControlLabel, Radio, RadioGroup } from '@mui/material';
+import CreateCategoryDialog from './CreateCategoryDialog';
 
 import {
   setSelectedMainTab,
@@ -150,6 +152,7 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
   const selectedTemplate = useSelectedTemplate();
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const { isAuthenticated, user } = useAuthStore();
 
   // Find the latest file name for the selected template
@@ -173,6 +176,14 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
           return;
         }
         setDialogOpen(true);
+        return;
+      }
+      case 'create-category': {
+        if (!isAuthenticated) {
+          setSnackbar({ open: true, message: 'Please login to create category' });
+          return;
+        }
+        setCategoryDialogOpen(true);
         return;
       }
       default:
@@ -281,6 +292,16 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
               <Button size='small' variant="contained">Save</Button>
           }
         />
+        <Tab
+          value="create-category"
+          label={
+            <Tooltip title="Create Category">
+              <Button size='small' variant="outlined" startIcon={<AddOutlined />}>
+                Category
+              </Button>
+            </Tooltip>
+          }
+        />
       </Tabs>
       <TemplateNameDialog 
         open={dialogOpen} 
@@ -290,6 +311,14 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
         currentDisplayName={selectedTemplate?.display_name}
         currentFileName={latestFileName}
         selectedVersionId={selectedTemplate?.version_id}
+      />
+      
+      <CreateCategoryDialog
+        open={categoryDialogOpen}
+        onClose={() => setCategoryDialogOpen(false)}
+        onSuccess={() => {
+          setSnackbar({ open: true, message: 'Category created successfully!' });
+        }}
       />
       
       <Snackbar

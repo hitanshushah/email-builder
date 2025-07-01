@@ -187,3 +187,62 @@ export async function updateVersionLink(versionId: number, newLink: string) {
     throw err;
   }
 }
+
+// Check if category key exists
+export async function checkCategoryKeyExists(keyName: string) {
+  const query = `
+    SELECT id, key, display_name FROM categories 
+    WHERE key = $1
+  `;
+
+  const values = [keyName];
+
+  try {
+    const result = await db.query(query, values);
+    if (result.rows.length > 0) {
+      return { exists: true, category: result.rows[0] };
+    }
+    return { exists: false, category: null };
+  } catch (err) {
+    console.error('DB Check Category Error:', err);
+    throw err;
+  }
+}
+
+// Save new category to categories table
+export async function saveNewCategoryToDb(keyName: string, displayName: string) {
+  const query = `
+    INSERT INTO categories (key, display_name)
+    VALUES ($1, $2)
+    RETURNING *;
+  `;
+
+  const values = [keyName, displayName];
+
+  try {
+    const result = await db.query(query, values);
+    if (result && result.rows.length > 0) {
+      return { success: true, category: result.rows[0] };
+    }
+  } catch (err) {
+    console.error('DB Save Category Error:', err);
+    throw err;
+  }
+}
+
+// Get all categories
+export async function getAllCategories() {
+  const query = `
+    SELECT id, key, display_name, created_at
+    FROM categories
+    ORDER BY display_name ASC
+  `;
+
+  try {
+    const result = await db.query(query);
+    return { success: true, categories: result.rows };
+  } catch (err) {
+    console.error('DB Get Categories Error:', err);
+    throw err;
+  }
+}
