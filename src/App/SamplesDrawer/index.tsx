@@ -194,6 +194,7 @@ export default function SamplesDrawer({
     if (addTemplateDialog) {
       fetchCategoryTemplates(addTemplateDialog.categoryId);
     }
+    if (setRefreshSignal) setRefreshSignal(Date.now());
   };
 
   const refreshAllCategoryTemplates = () => {

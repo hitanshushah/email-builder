@@ -8,7 +8,7 @@ export function generateTemplateKeyName(templateName: string): string {
 export async function checkTemplateKeyNameExists(keyName: string, userId: number) {
   const query = `
     SELECT id, key, key_name, display_name FROM templates 
-    WHERE key_name = $1 AND user_id = $2
+    WHERE key_name = $1 AND user_id = $2 AND deleted_at IS NULL
   `;
 
   const values = [keyName, userId];
@@ -88,7 +88,7 @@ export async function saveVersionToDb(templateId: number, fileName: string, link
 export async function getTemplateByKey(templateKey: string, userId: number) {
   const query = `
     SELECT id, key, key_name, display_name FROM templates 
-    WHERE key = $1 AND user_id = $2
+    WHERE key = $1 AND user_id = $2 AND deleted_at IS NULL
   `;
 
   const values = [templateKey, userId];
@@ -187,7 +187,7 @@ export async function updateVersionLink(versionId: number, newLink: string) {
 export async function checkCategoryKeyExists(keyName: string, userId: number) {
   const query = `
     SELECT id, key, display_name FROM categories 
-    WHERE key = $1 AND user_id = $2
+    WHERE key = $1 AND user_id = $2 AND deleted_at IS NULL
   `;
   const values = [keyName, userId];
   try {
@@ -224,7 +224,7 @@ export async function getAllCategories(userId: number) {
   const query = `
     SELECT id, key, display_name, created_at
     FROM categories
-    WHERE user_id = $1
+    WHERE user_id = $1 AND deleted_at IS NULL
     ORDER BY display_name ASC
   `;
   const values = [userId];
@@ -277,6 +277,7 @@ export async function getTemplatesNotInCategory(categoryId: number, userId: numb
       t.created_at
     FROM templates t
     WHERE t.user_id = $1
+    AND t.deleted_at IS NULL
     AND t.id NOT IN (
       SELECT template_id 
       FROM template_categories
