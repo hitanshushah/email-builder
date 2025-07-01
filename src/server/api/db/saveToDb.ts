@@ -434,9 +434,14 @@ export async function softDeleteTemplate(templateId: number) {
     WHERE template_id = $1
     RETURNING *;
   `;
+  const unlinkQuery = `
+    DELETE FROM template_categories
+    WHERE template_id = $1;
+  `;
   try {
     const templateResult = await db.query(templateQuery, [templateId]);
     await db.query(versionQuery, [templateId]);
+    await db.query(unlinkQuery, [templateId]);
     if (templateResult && templateResult.rows.length > 0) {
       return { success: true, template: templateResult.rows[0] };
     }
