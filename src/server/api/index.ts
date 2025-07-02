@@ -6,6 +6,7 @@ import cors from '@fastify/cors';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUI from '@fastify/swagger-ui';
 import storeUsername from './middleware/storeUsername';
+import sendEmailRoute from './routes/sendEmail';
 
 const fastify = Fastify({ logger: true });
 
@@ -36,6 +37,7 @@ await fastify.register(cors, {
 fastify.register(healthRoutes);
 fastify.register(saveRoute);
 fastify.register(categoriesRoute);
+fastify.register(sendEmailRoute);
 
 fastify.listen({ port: 4000, host: '0.0.0.0' }, err => {
   if (err) {

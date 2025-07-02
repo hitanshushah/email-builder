@@ -6,6 +6,7 @@ import {
   EditOutlined,
   PreviewOutlined,
   AddOutlined,
+  EmailOutlined,
 } from '@mui/icons-material';
 import { Button, Tab, Tabs, Tooltip, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, TextField, DialogContentText, Box, FormControlLabel, Radio, RadioGroup } from '@mui/material';
 import CreateCategoryDialog from './CreateCategoryDialog';
@@ -17,6 +18,7 @@ import {
   useSelectedTemplate,
 } from '../../documents/editor/EditorContext';
 import { useAuthStore } from '../../stores/authStore';
+import { renderToStaticMarkup } from '@usewaypoint/email-builder';
 
 function TemplateNameDialog({ open, onClose, onSave, isUpdate = false, currentDisplayName, currentFileName, selectedVersionId }: { 
   open: boolean; 
@@ -154,6 +156,10 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
   const [dialogOpen, setDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const { isAuthenticated, user } = useAuthStore();
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [sendTo, setSendTo] = useState('');
+  const [sendSubject, setSendSubject] = useState('');
+  const [sendLoading, setSendLoading] = useState(false);
 
   // Find the latest file name for the selected template
   const latestFileName = selectedTemplate?.file_name;
@@ -184,6 +190,14 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
           return;
         }
         setCategoryDialogOpen(true);
+        return;
+      }
+      case 'send-email': {
+        if (!isAuthenticated) {
+          setSnackbar({ open: true, message: 'Please login to send email' });
+          return;
+        }
+        setSendDialogOpen(true);
         return;
       }
       default:
@@ -251,6 +265,38 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
     }
   };
 
+  const handleSendEmail = async () => {
+    setSendLoading(true);
+    try {
+      const html = renderToStaticMarkup(document as any, { rootBlockId: 'root' });
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.username ? { 'x-authentik-username': user.username } : {}),
+        },
+        body: JSON.stringify({
+          to: sendTo,
+          subject: sendSubject || selectedTemplate?.display_name || 'Email from Template Builder',
+          html,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSnackbar({ open: true, message: 'Email sent successfully if email exists.' });
+        setSendDialogOpen(false);
+        setSendTo('');
+        setSendSubject('');
+      } else {
+        setSnackbar({ open: true, message: data.error || 'Failed to send email.' });
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to send email.' });
+    } finally {
+      setSendLoading(false);
+    }
+  };
+
   return (
     <>
       <Tabs value={selectedMainTab} onChange={handleChange}>
@@ -302,6 +348,16 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
             </Tooltip>
           }
         />
+        <Tab
+          value="send-email"
+          label={
+            <Tooltip title="Send current template as email for testing">
+              <Button size='small' variant="outlined" startIcon={<EmailOutlined />}>
+                Send Test Email
+              </Button>
+            </Tooltip>
+          }
+        />
       </Tabs>
       <TemplateNameDialog 
         open={dialogOpen} 
@@ -321,6 +377,39 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
           if (setRefreshSignal) setRefreshSignal(Date.now());
         }}
       />
+      
+      {sendDialogOpen && (
+        <Dialog open={sendDialogOpen} onClose={() => setSendDialogOpen(false)}>
+          <DialogTitle>Send Email</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Recipient Email"
+              type="email"
+              fullWidth
+              variant="outlined"
+              value={sendTo}
+              onChange={e => setSendTo(e.target.value)}
+            />
+            <TextField
+              margin="dense"
+              label="Subject"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={sendSubject}
+              onChange={e => setSendSubject(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setSendDialogOpen(false)}>Cancel</Button>
+            <Button variant="contained" onClick={handleSendEmail} disabled={sendLoading || !sendTo}>
+              {sendLoading ? 'Sending...' : 'Send'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
       
       <Snackbar
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}

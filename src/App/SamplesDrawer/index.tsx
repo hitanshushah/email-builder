@@ -286,7 +286,7 @@ export default function SamplesDrawer({
     >
       <Stack spacing={3} py={1} px={2} width={SAMPLES_DRAWER_WIDTH} justifyContent="space-between" height="100%">
         <Stack spacing={2}>
-          <Typography variant="h6" component="h1" sx={{ p: 0.75,  color: '#0b2d53' }}>
+          <Typography variant="h6" component="h1" sx={{ p: 0.75,  color: '#0b2d53', textAlign: 'left !important' }}>
             Email Builder
           </Typography>
 
@@ -315,7 +315,8 @@ export default function SamplesDrawer({
                 <ListSubheader component="div"
                   sx={{
                     fontWeight: 'bold',
-                    color: '#1565C0'
+                    color: '#1565C0',
+                    textAlign: 'left !important' 
                   }}
                 >
                   Categories
@@ -483,7 +484,8 @@ export default function SamplesDrawer({
                 <ListSubheader component="div"
                   sx={{
                     fontWeight: 'bold',
-                    color: '#1565C0'
+                    color: '#1565C0',
+                    textAlign: 'left !important' 
                   }}
                 >
                   Templates
