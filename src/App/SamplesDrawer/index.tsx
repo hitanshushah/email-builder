@@ -145,6 +145,16 @@ export default function SamplesDrawer({
     }
   }, [refreshSignal]);
 
+  useEffect(() => {
+    // Auto-expand the first template in the Templates section on mount or when templates change
+    if (templates && templates.length > 0) {
+      const groupedTemplates = groupTemplatesByDisplayName(templates);
+      if (groupedTemplates.length > 0 && expanded === false) {
+        setExpanded(groupedTemplates[0].id);
+      }
+    }
+  }, [templates]);
+
   const groupedTemplates: GroupedTemplate[] = groupTemplatesByDisplayName(templates);
 
   const fetchCategoryTemplates = async (categoryId: number) => {
@@ -291,6 +301,7 @@ export default function SamplesDrawer({
                 paddingY: 0.5,
                 borderRadius: 2
               }}
+              data-tour="create-template"
             >
               <ListItemText primary="Create New Template" />
             </ListItemButton>
@@ -315,6 +326,7 @@ export default function SamplesDrawer({
                         setCategoryDialogOpen(true);
                       }}
                       sx={{ color: '#1565C0' }}
+                      data-tour="create-category"
                     >
                       <AddOutlined fontSize="small" />
                     </IconButton>
@@ -374,6 +386,7 @@ export default function SamplesDrawer({
                                 handleAddTemplateToCategory(cat.id, cat.display_name);
                               } }
                               sx={{ mr: 1 }}
+                              data-tour="link-template-category"
                             >
                               <AddOutlined fontSize="small" />
                             </IconButton>
@@ -422,6 +435,7 @@ export default function SamplesDrawer({
                                           }}
                                           selected={selectedId === `empty-${template.id}`}
                                           onClick={() => handleTemplateEmpty(template)}
+                                          data-tour="create-version"
                                         >
                                           <ListItemText primary="Create New Version" primaryTypographyProps={{ fontSize: '11px', fontWeight: 500}}/>
                                         </ListItemButton>
@@ -479,9 +493,7 @@ export default function SamplesDrawer({
                   return (
                     <React.Fragment key={template.id}>
                       <ListItemButton onClick={() => setExpanded(isOpen ? false : template.id)}>
-                        <ListItemText primary={template.display_name}  primaryTypographyProps={{
-                                        fontWeight: 500,
-                                      }} />
+                        <ListItemText primary={template.display_name}  primaryTypographyProps={{ fontWeight: 500 }} />
                         <ContextMenuButton
                           level="template"
                           onRename={() => setRenameTemplateDialog({ open: true, templateId: template.id, currentName: template.display_name })}
@@ -505,8 +517,9 @@ export default function SamplesDrawer({
                             }}
                             selected={selectedId === `empty-${template.id}`}
                             onClick={() => handleTemplateEmpty(template)}
+                            data-tour="create-version"
                           >
-                            <ListItemText primary="Create New Version" primaryTypographyProps={{ fontSize: '11px', fontWeight: 500}}/>
+                            <ListItemText primary="Create New Version" primaryTypographyProps={{ fontSize: '11px', fontWeight: 500 }}/>
                           </ListItemButton>
                           {template.versions.map((version) => (
                             <ListItemButton
@@ -514,6 +527,7 @@ export default function SamplesDrawer({
                               sx={{ pl: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                               selected={selectedId === version.version_id}
                               onClick={() => handleLoadTemplate(version)}
+                              data-tour="update-version"
                             >
                               <ListItemText primary={`${version.file_name}_v${version.version_no}`} />
                               <ContextMenuButton

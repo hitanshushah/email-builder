@@ -46,10 +46,7 @@ CREATE TABLE categories (
   id SERIAL PRIMARY KEY,
   key VARCHAR(100) NOT NULL,
   display_name VARCHAR(100) NOT NULL,
-  user_id INTEGER REFERENCES users(id),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  deleted_at TIMESTAMP
+  user_id INTEGER REFERENCES users(id)
 );
 CREATE UNIQUE INDEX idx_categories_key_user_id ON categories(key, user_id);
 

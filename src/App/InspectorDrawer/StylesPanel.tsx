@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { setDocument, useDocument } from '../../documents/editor/EditorContext';
+import { Button, Box } from '@mui/material';
 
 import EmailLayoutSidebarPanel from './ConfigurationPanel/input-panels/EmailLayoutSidebarPanel';
 
@@ -15,5 +16,7 @@ export default function StylesPanel() {
     throw new Error('Expected "root" element to be of type EmailLayout');
   }
 
-  return <EmailLayoutSidebarPanel key="root" data={data} setData={(data) => setDocument({ root: { type, data } })} />;
+  return (
+    <EmailLayoutSidebarPanel key="root" data={data} setData={(data) => setDocument({ root: { type, data } })} />
+  );
 }

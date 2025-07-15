@@ -94,6 +94,7 @@ function TemplateNameDialog({ open, onClose, onSave, isUpdate = false, currentDi
                 value="overwrite" 
                 control={<Radio />} 
                 label="Overwrite current version" 
+                data-tour="update-version"
               />
               <FormControlLabel 
                 value="new" 
@@ -324,14 +325,14 @@ export default function MainTabsGroup({ setRefreshSignal }: { setRefreshSignal?:
         <Tab
           value="save"
           label={
-              <Button size='small' variant="contained">Save</Button>
+              <Button size='small' variant="contained" data-tour="save-template">Save</Button>
           }
         />
         <Tab
           value="send-email"
           label={
             <Tooltip title="Send current template as email for testing">
-              <Button size='small' variant="outlined" startIcon={<EmailOutlined />}>
+              <Button size='small' variant="outlined" startIcon={<EmailOutlined />} data-tour="send-test-email">
                 Send Test Email
               </Button>
             </Tooltip>

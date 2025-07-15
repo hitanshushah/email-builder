@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Box, Drawer, Tab, Tabs } from '@mui/material';
+import { Box, Drawer, Tab, Tabs, Button } from '@mui/material';
 
 import { setSidebarTab, useInspectorDrawerOpen, useSelectedSidebarTab } from '../../documents/editor/EditorContext';
 
@@ -9,7 +9,7 @@ import StylesPanel from './StylesPanel';
 
 export const INSPECTOR_DRAWER_WIDTH = 320;
 
-export default function InspectorDrawer() {
+export default function InspectorDrawer({ onStartTour }: { onStartTour?: () => void }) {
   const selectedSidebarTab = useSelectedSidebarTab();
   const inspectorDrawerOpen = useInspectorDrawerOpen();
 
@@ -31,13 +31,19 @@ export default function InspectorDrawer() {
         width: inspectorDrawerOpen ? INSPECTOR_DRAWER_WIDTH : 0,
       }}
     >
-      <Box sx={{ width: INSPECTOR_DRAWER_WIDTH, height: 49, borderBottom: 1, borderColor: 'divider' }}>
-        <Box px={2}>
-          <Tabs value={selectedSidebarTab} onChange={(_, v) => setSidebarTab(v)}>
-            <Tab value="styles" label="Styles" />
-            <Tab value="block-configuration" label="Inspect" />
-          </Tabs>
-        </Box>
+      <Box sx={{ width: INSPECTOR_DRAWER_WIDTH, height: 49, borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', px: 2 }}>
+        <Tabs value={selectedSidebarTab} onChange={(_, v) => setSidebarTab(v)}>
+          <Tab value="styles" label="Styles" />
+          <Tab value="block-configuration" label="Inspect" />
+        </Tabs>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={onStartTour}
+          sx={{ background: '#1565C0', color: '#fff', ml: 2, height: 32, minWidth: 100, fontSize: 13 }}
+        >
+          Start Tour
+        </Button>
       </Box>
       <Box sx={{ width: INSPECTOR_DRAWER_WIDTH, height: 'calc(100% - 49px)', overflow: 'auto' }}>
         {renderCurrentSidebarPanel()}

@@ -1,4 +1,4 @@
-import WELCOME_TEMPLATE from './landingTemplate/welcome';
+import LANDING_TEMPLATE from './landingTemplate/landing';
 
 export default function getConfiguration(template: string) {
   if (template.startsWith('#code/')) {
@@ -11,5 +11,5 @@ export default function getConfiguration(template: string) {
     }
   }
 
-  return WELCOME_TEMPLATE;
+  return LANDING_TEMPLATE;
 }
