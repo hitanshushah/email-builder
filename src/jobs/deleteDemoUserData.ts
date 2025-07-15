@@ -62,6 +62,7 @@ export async function deleteDemoUserData() {
       await db.query('DELETE FROM categories WHERE id = ANY($1)', [categoryIds]);
     }
 
+    await db.query('Update users set show_tour = true where id = $1', [demoUserId]);
     log('✅ Cron job completed successfully.');
   } catch (err: any) {
     log(`❌ Cron job failed: ${err.message}`);

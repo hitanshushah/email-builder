@@ -7,6 +7,7 @@ import {
   Stack,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { useAuthStore } from '../stores/authStore';
 
 export default function CustomTooltip({
   step,
@@ -20,6 +21,29 @@ export default function CustomTooltip({
 }) {
   const isFirstStep = index === 0;
   const isLastStep = index === size - 1;
+  const { fetchUser, user } = useAuthStore();
+
+  const handleDontShowAgain = async () => {
+    try {
+      await fetch('/api/user/tour', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ show_tour: false })
+      });
+      await fetchUser();
+    } catch (e) {}
+  };
+
+  const handleEnableTour = async () => {
+    try {
+      await fetch('/api/user/tour', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ show_tour: true })
+      });
+      await fetchUser();
+    } catch (e) {}
+  };
 
   return (
     <Box
@@ -102,23 +126,38 @@ export default function CustomTooltip({
         </Button>
       </Stack>
 
-      {/* Don't show again */}
-      <Button
-        size="small"
-        sx={{
-          mt: 1,
-          fontSize: 12,
-          color: '#666',
-          textTransform: 'none',
-          minWidth: 0,
-          display: 'block',
-        }}
-        onClick={() => {
-          console.log("Don't show again clicked");
-        }}
-      >
-        Don’t show again
-      </Button>
+      {/* Don't show again or Enable tour */}
+      {user?.show_tour !== false ? (
+        <Button
+          size="small"
+          sx={{
+            mt: 1,
+            fontSize: 12,
+            color: '#666',
+            textTransform: 'none',
+            minWidth: 0,
+            display: 'block',
+          }}
+          onClick={handleDontShowAgain}
+        >
+          Don’t show again
+        </Button>
+      ) : (
+        <Button
+          size="small"
+          sx={{
+            mt: 1,
+            fontSize: 12,
+            color: '#666',
+            textTransform: 'none',
+            minWidth: 0,
+            display: 'block',
+          }}
+          onClick={handleEnableTour}
+        >
+          Enable tour
+        </Button>
+      )}
     </Box>
   );
 }

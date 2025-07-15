@@ -30,7 +30,16 @@ export default function App() {
 
   const [refreshSignal, setRefreshSignal] = useState(0);
   const [demoBannerOpen, setDemoBannerOpen] = useState(true);
-  const [tourRun, setTourRun] = useState(true); // Start tour on every load
+  // Only run the tour if user?.show_tour is true
+  const [tourRun, setTourRun] = useState(false);
+
+  useEffect(() => {
+    if (user?.show_tour === true) {
+      setTourRun(true);
+    } else {
+      setTourRun(false);
+    }
+  }, [user?.show_tour]);
 
   const handleStartTour = () => {
     setTourRun(false); // Force Joyride to reset

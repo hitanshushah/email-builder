@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 interface User {
   username: string;
+  show_tour?: boolean;
 }
 
 interface AuthState {
@@ -63,7 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const data = await response.json();
       
       if (data.authenticated && data.username) {
-        setUser({ username: data.username });
+        setUser({ username: data.username, show_tour: data.show_tour });
       } else {
         setUser(null);
       }
