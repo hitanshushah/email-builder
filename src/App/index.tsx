@@ -10,6 +10,7 @@ import InspectorDrawer, { INSPECTOR_DRAWER_WIDTH } from './InspectorDrawer';
 import SamplesDrawer, { SAMPLES_DRAWER_WIDTH } from './SamplesDrawer';
 import TemplatePanel from './TemplatePanel';
 import Joyride from 'react-joyride';
+import CustomTooltip from '../components/CustomTooltip';
 
 function useDrawerTransition(cssProperty: 'margin-left' | 'margin-right', open: boolean) {
   const { transitions } = useTheme();
@@ -79,6 +80,7 @@ export default function App() {
         callback={data => {
           if (data.status === 'finished' || data.status === 'skipped') setTourRun(false);
         }}
+        tooltipComponent={CustomTooltip}
         styles={{
           options: {
             zIndex: 3000,
