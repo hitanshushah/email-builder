@@ -159,10 +159,22 @@ export default function TemplatePanel({ setRefreshSignal }: { setRefreshSignal?:
                       horizontal: 'right',
                     }}
                   >
-                    <MenuItem onClick={handleLogout}>
-                      <Logout sx={{ mr: 1 }} fontSize="small" />
-                      Logout
-                    </MenuItem>
+                    {user.username === 'demo-user' ? (
+                      <MenuItem
+                        onClick={() => {
+                          handleUserMenuClose();
+                          window.location.href = import.meta.env.VITE_APP_LOGIN_URL;
+                        }}
+                      >
+                        <Logout sx={{ mr: 1 }} fontSize="small" />
+                        Login
+                      </MenuItem>
+                    ) : (
+                      <MenuItem onClick={handleLogout}>
+                        <Logout sx={{ mr: 1 }} fontSize="small" />
+                        Logout
+                      </MenuItem>
+                    )}
                   </Menu>
                 </>
               )
