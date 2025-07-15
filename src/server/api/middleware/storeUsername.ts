@@ -23,7 +23,7 @@ const storeUsername: FastifyPluginAsync = async (fastify) => {
       try {
         let result = await db.query('SELECT id FROM users WHERE name = $1', [username]);
         if (result.rows.length === 0) {
-          await db.query('INSERT INTO users (name, email) VALUES ($1, $2)', [username, null]);
+          await db.query('INSERT INTO users (name, email, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())', [username, null]);
           result = await db.query('SELECT id FROM users WHERE name = $1', [username]);
           isNewUser = true;
         }
@@ -41,6 +41,37 @@ const storeUsername: FastifyPluginAsync = async (fastify) => {
         } catch (error) {
           // Silent fail - don't block user authentication
         }
+      }
+    } else {
+      // No username header, assign demo user
+      try {
+        const result = await db.query('SELECT id FROM users WHERE name = $1', ['demo-user']);
+        let demoUserId = null;
+        if (result.rows.length > 0) {
+          demoUserId = Number(result.rows[0].id);
+          request.user = { username: 'demo-user', user_id: demoUserId };
+        } else {
+          // Fallback: create demo user if not present
+          await db.query('INSERT INTO users (name, email, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())', ['demo-user', 'demo@email.com']);
+          const newResult = await db.query('SELECT id FROM users WHERE name = $1', ['demo-user']);
+          if (newResult.rows.length > 0) {
+            demoUserId = Number(newResult.rows[0].id);
+            request.user = { username: 'demo-user', user_id: demoUserId };
+          }
+        }
+        // Check if demo user has any templates, if not, auto-create them
+        if (demoUserId) {
+          const templatesResult = await db.query('SELECT id FROM templates WHERE user_id = $1 AND deleted_at IS NULL LIMIT 1', [demoUserId]);
+          if (templatesResult.rows.length === 0) {
+            try {
+              await autoCreateTemplatesForUser(demoUserId, 'demo-user');
+            } catch (error) {
+              // Silent fail - don't block demo user
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching/creating demo user:', err);
       }
     }
   });
