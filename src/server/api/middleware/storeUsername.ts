@@ -2,6 +2,7 @@
 import fp from 'fastify-plugin';
 import { FastifyPluginAsync } from 'fastify';
 import db from '../../../../utils/db';
+import { autoCreateTemplatesForUser } from '../db/autoCreateTemplates';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -18,11 +19,13 @@ const storeUsername: FastifyPluginAsync = async (fastify) => {
 
     if (username) {
       let user_id = undefined;
+      let isNewUser = false;
       try {
         let result = await db.query('SELECT id FROM users WHERE name = $1', [username]);
         if (result.rows.length === 0) {
           await db.query('INSERT INTO users (name, email) VALUES ($1, $2)', [username, null]);
           result = await db.query('SELECT id FROM users WHERE name = $1', [username]);
+          isNewUser = true;
         }
         if (result.rows.length > 0) {
           user_id = Number(result.rows[0].id);
@@ -31,6 +34,14 @@ const storeUsername: FastifyPluginAsync = async (fastify) => {
         console.error('Error fetching/inserting user_id:', err);
       }
       request.user = { username, user_id };
+      
+      if (isNewUser && user_id) {
+        try {
+          await autoCreateTemplatesForUser(user_id, username);
+        } catch (error) {
+          // Silent fail - don't block user authentication
+        }
+      }
     }
   });
 };

@@ -15,7 +15,7 @@ import {
   setDocument
 } from '../../documents/editor/EditorContext';
 import { useAuthStore } from '../../stores/authStore';
-import getConfiguration from '../../getConfiguration';
+
 import CreateCategoryDialog from '../TemplatePanel/CreateCategoryDialog';
 import ContextMenuButton from './ContextMenuButton';
 import RenameFileDialog from './RenameFileDialog';
@@ -63,7 +63,6 @@ export default function SamplesDrawer({
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | string | null>(0);
   const [expanded, setExpanded] = useState<number | false>(false);
-  const [samplesExpanded, setSamplesExpanded] = useState(!isAuthenticated);
   const document = useDocument();
   const [categories, setCategories] = useState<any[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -81,26 +80,15 @@ export default function SamplesDrawer({
   const [renameCategoryDialog, setRenameCategoryDialog] = useState<{ open: boolean; categoryId: number; currentName: string } | null>(null);
   const [deleteCategoryDialog, setDeleteCategoryDialog] = useState<{ open: boolean; categoryId: number; categoryName: string } | null>(null);
 
-  const sampleTemplates = [
-    { name: 'Welcome Email', href: '#sample/welcome' },
-    { name: 'One-time passcode (OTP)', href: '#sample/one-time-password' },
-    { name: 'Reset password', href: '#sample/reset-password' },
-    { name: 'E-commerce receipt', href: '#sample/order-ecomerce' },
-    { name: 'Subscription receipt', href: '#sample/subscription-receipt' },
-    { name: 'Reservation reminder', href: '#sample/reservation-reminder' },
-    { name: 'Post metrics', href: '#sample/post-metrics-report' },
-    { name: 'Respond to inquiry', href: '#sample/respond-to-message' },
-  ];
+
 
   useEffect(() => {
     if (!isAuthenticated) {
       setTemplates([]);
-      setSamplesExpanded(true);
       return;
     }
     setLoading(true);
     setError(null);
-    setSamplesExpanded(false);
     fetch('/api/user-templates', {
       headers: user?.username ? { 'x-authentik-username': user.username } : {},
     })
@@ -240,11 +228,7 @@ export default function SamplesDrawer({
     resetDocument({ root: { type: 'EmailLayout', data: {} } });
   };
 
-  const handleLoadSample = (sample: any) => {
-    setSelectedId('sample:' + sample.href);
-    setSelectedTemplate(null);
-    resetDocument(getConfiguration(sample.href));
-  };
+
 
   const handleCopyVersion = async (version: any) => {
     try {
@@ -411,7 +395,7 @@ export default function SamplesDrawer({
                                       sx={{ pl: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                                       onClick={() => setExpanded(isTemplateOpen ? false : template.id)}
                                     >
-                                      <ListItemText primary={`${template.display_name} Template`} primaryTypographyProps={{
+                                      <ListItemText primary={`${template.display_name}`} primaryTypographyProps={{
                                         fontWeight: 500,
                                       }} />
                                       <ContextMenuButton
@@ -549,24 +533,7 @@ export default function SamplesDrawer({
               </>
             )}
 
-            <ListItemButton onClick={() => setSamplesExpanded(!samplesExpanded)}>
-              <ListItemText primary="Sample Templates"  primaryTypographyProps={{ fontWeight: 500 }} />
-              {samplesExpanded ? <ExpandLess /> : <ExpandMore />}
-            </ListItemButton>
-            <Collapse in={samplesExpanded} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding>
-                {sampleTemplates.map((sample) => (
-                  <ListItemButton
-                    key={sample.href}
-                    sx={{ pl: 4 }}
-                    selected={selectedId === 'sample:' + sample.href}
-                    onClick={() => handleLoadSample(sample)}
-                  >
-                    <ListItemText primary={sample.name} />
-                  </ListItemButton>
-                ))}
-              </List>
-            </Collapse>
+
           </List>
         </Stack>
       </Stack>
