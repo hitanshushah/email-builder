@@ -37,6 +37,7 @@
     "fastify": "^5.3.2",
     "highlight.js": "^11.9.0",
     "minio": "^8.0.5",
+    "node-cron": "^4.2.1",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.4",
     "nodemon": "^3.1.10",

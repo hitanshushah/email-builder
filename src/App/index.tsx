@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
-import { Stack, useTheme, Box, Chip } from '@mui/material';
+import { Stack, useTheme, Box, Chip, Alert, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 
 import { useInspectorDrawerOpen, useSamplesDrawerOpen } from '../documents/editor/EditorContext';
 import { useAuthStore } from '../stores/authStore';
@@ -26,9 +27,54 @@ export default function App() {
   const marginRightTransition = useDrawerTransition('margin-right', inspectorDrawerOpen);
 
   const [refreshSignal, setRefreshSignal] = useState(0);
+  const [demoBannerOpen, setDemoBannerOpen] = useState(true);
+
+  const isDemoUser = isAuthenticated && user && user.username === 'demo-user';
 
   return (
     <>
+      {/* Demo session warning banner */}
+      {isDemoUser && demoBannerOpen && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            zIndex: 2000,
+            display: 'flex',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <Alert
+            severity="warning"
+            icon={false}
+            sx={{
+              mt:1,
+              borderRadius: 2,
+              background: '#DD7410',
+              color: '#fff',
+              alignItems: 'center',
+              fontWeight: 500,
+              fontSize: 15,
+              pointerEvents: 'auto',
+            }}
+            action={
+              <IconButton
+                aria-label="close"
+                size="small"
+                onClick={() => setDemoBannerOpen(false)}
+                sx={{ ml: 1, color: 'inherit' }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            }
+          >
+            This is a <b>demo session</b>. All data will be refreshed every 15 minutes.
+          </Alert>
+        </Box>
+      )}
       <InspectorDrawer />
       <SamplesDrawer refreshSignal={refreshSignal} setRefreshSignal={setRefreshSignal}/>
 

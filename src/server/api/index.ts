@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import cron from 'node-cron';
 import healthRoutes from './routes/authenticateUser';
 import saveRoute from './routes/save';
 import categoriesRoute from './routes/categories';
@@ -7,8 +8,19 @@ import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUI from '@fastify/swagger-ui';
 import storeUsername from './middleware/storeUsername';
 import sendEmailRoute from './routes/sendEmail';
+import { deleteDemoUserData } from '../../jobs/deleteDemoUserData';
 
 const fastify = Fastify({ logger: true });
+
+const cron_schedule = process.env.CRON_SCHEDULE ?? '*/15 * * * *';
+cron.schedule(cron_schedule, async () => {
+  try {
+    console.log('[CRON] Starting demo user cleanup...');
+    await deleteDemoUserData();
+  } catch (err) {
+    console.error('[CRON] Error running cleanup:', err);
+  }
+});
 
 await fastify.register(storeUsername); 
 
