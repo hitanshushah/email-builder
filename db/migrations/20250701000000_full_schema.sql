@@ -7,10 +7,7 @@ DROP TABLE IF EXISTS templates CASCADE;
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100),
-  email VARCHAR(100),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  deleted_at TIMESTAMP
+  email VARCHAR(100)
 );
 
 -- TEMPLATES
@@ -46,7 +43,10 @@ CREATE TABLE categories (
   id SERIAL PRIMARY KEY,
   key VARCHAR(100) NOT NULL,
   display_name VARCHAR(100) NOT NULL,
-  user_id INTEGER REFERENCES users(id)
+  user_id INTEGER REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP
 );
 CREATE UNIQUE INDEX idx_categories_key_user_id ON categories(key, user_id);
 
