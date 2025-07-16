@@ -133,7 +133,7 @@ export default function TemplatePanel({ setRefreshSignal }: { setRefreshSignal?:
                 onClick={() => window.location.href = import.meta.env.VITE_APP_LOGIN_URL}
                 data-testid="login-button"
               >
-                Login
+                Switch User
               </Button>
             ) : (
               user && (
@@ -167,7 +167,7 @@ export default function TemplatePanel({ setRefreshSignal }: { setRefreshSignal?:
                         }}
                       >
                         <Logout sx={{ mr: 1 }} fontSize="small" />
-                        Login
+                        Switch User
                       </MenuItem>
                     ) : (
                       <MenuItem onClick={handleLogout}>

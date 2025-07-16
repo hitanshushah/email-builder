@@ -16,6 +16,7 @@ declare module 'fastify' {
 const storeUsername: FastifyPluginAsync = async (fastify) => {
   fastify.addHook('onRequest', async (request, reply) => {
     const username = request.headers['x-authentik-username'] as string | undefined;
+    const email = request.headers['x-authentik-email'] as string | undefined;
 
     if (username) {
       let user_id = undefined;
@@ -23,9 +24,11 @@ const storeUsername: FastifyPluginAsync = async (fastify) => {
       try {
         let result = await db.query('SELECT id FROM users WHERE name = $1', [username]);
         if (result.rows.length === 0) {
-          await db.query('INSERT INTO users (name, email, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())', [username, null]);
+          await db.query('INSERT INTO users (name, email, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())', [username, email || null]);
           result = await db.query('SELECT id FROM users WHERE name = $1', [username]);
           isNewUser = true;
+        } else if (email) {
+          await db.query('UPDATE users SET email = $1, updated_at = NOW() WHERE name = $2', [email, username]);
         }
         if (result.rows.length > 0) {
           user_id = Number(result.rows[0].id);

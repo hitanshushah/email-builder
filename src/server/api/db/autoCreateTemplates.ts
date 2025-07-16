@@ -51,8 +51,11 @@ export async function autoCreateTemplatesForUser(userId: number, username: strin
         const templateName = templateFile.name;
         const keyName = generateTemplateKeyName(templateName);
         
-        const bucket = 'default-bucket';
-        const fileName = `document-${Date.now()}-${username}-${templateFile.filename}`;
+        const safeUsername = username.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+        const bucket = `${safeUsername}`;
+        const fileName = `document-${Date.now()}-${safeUsername}-${templateFile.filename}`;
+        
         
         const minioResult = await saveJsonToMinio(bucket, fileName, templateData);
         

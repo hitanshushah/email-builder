@@ -8,17 +8,28 @@ import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUI from '@fastify/swagger-ui';
 import storeUsername from './middleware/storeUsername';
 import sendEmailRoute from './routes/sendEmail';
-import { deleteDemoUserData } from '../../jobs/deleteDemoUserData';
+import { deleteDemoUserData, deleteDemoUserBucket } from '../../jobs/deleteDemoUserData';
 
 const fastify = Fastify({ logger: true });
 
 const cron_schedule = process.env.CRON_SCHEDULE ?? '*/15 * * * *';
+const everyday_cron = process.env.EVERY_DAY_CRON ?? '0 0 * * *';
+
 cron.schedule(cron_schedule, async () => {
   try {
     console.log('[CRON] Starting demo user cleanup...');
     await deleteDemoUserData();
   } catch (err) {
     console.error('[CRON] Error running cleanup:', err);
+  }
+});
+
+cron.schedule(cron_schedule, async () => {
+  try {
+    console.log('[CRON] Starting demo user Minio bucket cleanup...');
+    await deleteDemoUserBucket();
+  } catch (err) {
+    console.error('[CRON] Error running Minio bucket cleanup:', err);
   }
 });
 

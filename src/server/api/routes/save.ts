@@ -53,8 +53,11 @@ const saveRoute: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    const bucket = 'default-bucket';
-    const fileName = `document-${Date.now()}-${username}.json`;
+    const safeUsername = username.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+    const bucket = `${safeUsername}`;
+    const fileName = `document-${Date.now()}-${safeUsername}.json`;
+    
     
     try {
       if (selectedVersionId) {

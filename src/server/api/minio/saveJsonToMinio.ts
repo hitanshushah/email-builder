@@ -10,7 +10,13 @@ export async function saveJsonToMinio(bucket: string, fileName: string, jsonData
     const metaData = {
       'Content-Type': 'application/json',
     };
-  
+
+    // Ensure bucket exists
+    const exists = await minioClient.bucketExists(bucket);
+    if (!exists) {
+      await minioClient.makeBucket(bucket);
+    }
+
     const res = await minioClient.putObject(bucket, fileName, stream, buffer.length, metaData);
     if (res.etag) {
         const endpoint = process.env.MINIO_PUBLIC_URL;

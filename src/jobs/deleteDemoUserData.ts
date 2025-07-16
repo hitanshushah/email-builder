@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import db from '../../utils/db';
+import { minioClient } from '../../utils/minioClient';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +68,48 @@ export async function deleteDemoUserData() {
   } catch (err: any) {
     log(`❌ Cron job failed: ${err.message}`);
     console.error('[CRON] Error:', err);
+  } finally {
+    cleanOldLogs();
+  }
+}
+
+export async function deleteDemoUserBucket() {
+  log('🔁 Cron job (Minio bucket) started');
+  try {
+    // Find demo user
+    const userResult = await db.query('SELECT name FROM users WHERE name = $1', ['demo-user']);
+    if (userResult.rows.length === 0) {
+      log('⚠️ No demo user found for bucket deletion.');
+      return;
+    }
+    const username = userResult.rows[0].name;
+    // Sanitize username as in autoCreateTemplates.ts
+    const safeUsername = username.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const bucket = `${safeUsername}`;
+    // Check if bucket exists
+    const exists = await minioClient.bucketExists(bucket);
+    if (!exists) {
+      log(`⚠️ Bucket '${bucket}' does not exist.`);
+      return;
+    }
+    // Remove all objects from the bucket before deleting (Minio requires empty bucket)
+    const objectsStream = minioClient.listObjectsV2(bucket, '', true);
+    const objectsToDelete = [];
+    for await (const obj of objectsStream) {
+      if (obj && obj.name) {
+        objectsToDelete.push(obj.name);
+      }
+    }
+    if (objectsToDelete.length > 0) {
+      await minioClient.removeObjects(bucket, objectsToDelete);
+      log(`🗑️ Deleted ${objectsToDelete.length} objects from bucket '${bucket}'.`);
+    }
+    // Now delete the bucket
+    await minioClient.removeBucket(bucket);
+    log(`✅ Bucket '${bucket}' deleted successfully.`);
+  } catch (err: any) {
+    log(`❌ Bucket deletion failed: ${err.message}`);
+    console.error('[CRON] Minio bucket error:', err);
   } finally {
     cleanOldLogs();
   }
