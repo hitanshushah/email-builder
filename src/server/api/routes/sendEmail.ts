@@ -6,7 +6,7 @@ const sendEmailRoute: FastifyPluginAsync = async (fastify) => {
     if (!request.user?.username || !request.user?.user_id) {
       return reply.status(401).send({ success: false, error: 'Authentication required' });
     }
-    const { to, html, subject = 'Test Email from Email Builder' } = request.body as {
+    const { to, html, subject = 'Test Email from Design Pad' } = request.body as {
       to: string;
       subject?: string;
       html: string;

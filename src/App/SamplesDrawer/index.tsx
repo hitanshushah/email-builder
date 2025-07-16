@@ -281,7 +281,7 @@ export default function SamplesDrawer({
       <Stack spacing={3} py={1} px={2} width={SAMPLES_DRAWER_WIDTH} justifyContent="space-between" height="100%">
         <Stack spacing={2}>
           <Typography variant="h6" component="h1" sx={{ p: 0.75,  color: '#0b2d53', textAlign: 'left !important' }}>
-            Email Builder
+            Design Pad
           </Typography>
 
           <List
