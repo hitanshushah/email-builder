@@ -24,7 +24,7 @@ cron.schedule(cron_schedule, async () => {
   }
 });
 
-cron.schedule(cron_schedule, async () => {
+cron.schedule(everyday_cron, async () => {
   try {
     console.log('[CRON] Starting demo user Minio bucket cleanup...');
     await deleteDemoUserBucket();
