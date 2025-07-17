@@ -1,8 +1,10 @@
 -- migrate:up
 -- Drop dependent tables if they exist
-DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS template_categories CASCADE;
+DROP TABLE IF EXISTS categories CASCADE;
 DROP TABLE IF EXISTS versions CASCADE;
 DROP TABLE IF EXISTS templates CASCADE;
+DROP TABLE IF EXISTS users CASCADE; 
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
