@@ -1,127 +1,147 @@
 {
-    "root": {
-      "type": "EmailLayout",
-      "data": {
-        "backdropColor": "#000000",
-        "canvasColor": "#000000",
-        "textColor": "#FFFFFF",
-        "fontFamily": "BOOK_SERIF",
-        "childrenIds": [
-          "block_ChPX66qUhF46uynDE8AY11",
-          "block_CkNrtQgkqPt2YWLv1hr5eJ",
-          "block_BFLBa3q5y8kax9KngyXP65",
-          "block_4T7sDFb4rqbSyWjLGJKmov",
-          "block_Rvc8ZfTjfhXjpphHquJKvP"
-        ]
-      }
-    },
-    "block_ChPX66qUhF46uynDE8AY11": {
-      "type": "Image",
-      "data": {
-        "style": {
-          "backgroundColor": null,
-          "padding": {
-            "top": 24,
-            "bottom": 24,
-            "left": 24,
-            "right": 24
-          },
-          "textAlign": "center"
-        },
-        "props": {
-          "height": 24,
-          "url": "https://d1iiu589g39o6c.cloudfront.net/live/platforms/platform_A9wwKSL6EV6orh6f/images/wptemplateimage_jc7ZfPvdHJ6rtH1W/&.png",
-          "contentAlignment": "middle"
+  "root": {
+    "type": "EmailLayout",
+    "data": {
+      "backdropColor": "#E5E5E5",
+      "borderRadius": 48,
+      "canvasColor": "#262626",
+      "textColor": "#FFFFFF",
+      "fontFamily": "ORGANIC_SANS",
+      "childrenIds": [
+        "block_CkNrtQgkqPt2YWLv1hr5eJ",
+        "block_BFLBa3q5y8kax9KngyXP65",
+        "block_4T7sDFb4rqbSyWjLGJKmov",
+        "block-1752808231850",
+        "block-1752808491315",
+        "block_Rvc8ZfTjfhXjpphHquJKvP"
+      ]
+    }
+  },
+  "block_CkNrtQgkqPt2YWLv1hr5eJ": {
+    "type": "Text",
+    "data": {
+      "style": {
+        "color": "#ffffff",
+        "backgroundColor": null,
+        "fontSize": 16,
+        "fontFamily": null,
+        "fontWeight": "normal",
+        "textAlign": "center",
+        "padding": {
+          "top": 16,
+          "bottom": 16,
+          "left": 24,
+          "right": 24
         }
+      },
+      "props": {
+        "text": "Here is your one-time passcode:"
       }
-    },
-    "block_CkNrtQgkqPt2YWLv1hr5eJ": {
-      "type": "Text",
-      "data": {
-        "style": {
-          "color": "#ffffff",
-          "backgroundColor": null,
-          "fontSize": 16,
-          "fontFamily": null,
-          "fontWeight": "normal",
-          "textAlign": "center",
-          "padding": {
-            "top": 16,
-            "bottom": 16,
-            "left": 24,
-            "right": 24
-          }
-        },
-        "props": {
-          "text": "Here is your one-time passcode:"
+    }
+  },
+  "block_BFLBa3q5y8kax9KngyXP65": {
+    "type": "Heading",
+    "data": {
+      "style": {
+        "color": null,
+        "backgroundColor": null,
+        "fontFamily": "MONOSPACE",
+        "fontWeight": "bold",
+        "textAlign": "center",
+        "padding": {
+          "top": 16,
+          "bottom": 16,
+          "left": 24,
+          "right": 24
         }
+      },
+      "props": {
+        "level": "h1",
+        "text": "0123456"
       }
-    },
-    "block_BFLBa3q5y8kax9KngyXP65": {
-      "type": "Heading",
-      "data": {
-        "style": {
-          "color": null,
-          "backgroundColor": null,
-          "fontFamily": "MONOSPACE",
-          "fontWeight": "bold",
-          "textAlign": "center",
-          "padding": {
-            "top": 16,
-            "bottom": 16,
-            "left": 24,
-            "right": 24
-          }
-        },
-        "props": {
-          "level": "h1",
-          "text": "0123456"
+    }
+  },
+  "block_4T7sDFb4rqbSyWjLGJKmov": {
+    "type": "Text",
+    "data": {
+      "style": {
+        "color": "#868686",
+        "backgroundColor": null,
+        "fontSize": 16,
+        "fontFamily": null,
+        "fontWeight": "normal",
+        "textAlign": "center",
+        "padding": {
+          "top": 16,
+          "bottom": 16,
+          "left": 24,
+          "right": 24
         }
+      },
+      "props": {
+        "text": "This code will expire in 30 minutes."
       }
-    },
-    "block_4T7sDFb4rqbSyWjLGJKmov": {
-      "type": "Text",
-      "data": {
-        "style": {
-          "color": "#868686",
-          "backgroundColor": null,
-          "fontSize": 16,
-          "fontFamily": null,
-          "fontWeight": "normal",
-          "textAlign": "center",
-          "padding": {
-            "top": 16,
-            "bottom": 16,
-            "left": 24,
-            "right": 24
-          }
-        },
-        "props": {
-          "text": "This code will expire in 30 minutes."
+    }
+  },
+  "block_Rvc8ZfTjfhXjpphHquJKvP": {
+    "type": "Text",
+    "data": {
+      "style": {
+        "color": "#868686",
+        "backgroundColor": null,
+        "fontSize": 14,
+        "fontFamily": null,
+        "fontWeight": "normal",
+        "textAlign": "center",
+        "padding": {
+          "top": 16,
+          "bottom": 16,
+          "right": 24,
+          "left": 24
         }
+      },
+      "props": {
+        "text": ""
       }
-    },
-    "block_Rvc8ZfTjfhXjpphHquJKvP": {
-      "type": "Text",
-      "data": {
-        "style": {
-          "color": "#868686",
-          "backgroundColor": null,
-          "fontSize": 14,
-          "fontFamily": null,
-          "fontWeight": "normal",
-          "textAlign": "center",
-          "padding": {
-            "top": 16,
-            "bottom": 16,
-            "left": 24,
-            "right": 24
-          }
-        },
-        "props": {
-          "text": "Problems? Just reply to this email."
+    }
+  },
+  "block-1752808231850": {
+    "type": "Text",
+    "data": {
+      "style": {
+        "color": "#A3A3A3",
+        "fontSize": 15,
+        "fontWeight": "normal",
+        "textAlign": "center",
+        "padding": {
+          "top": 12,
+          "bottom": 8,
+          "right": 24,
+          "left": 24
         }
+      },
+      "props": {
+        "text": "Do not share it with anyone"
+      }
+    }
+  },
+  "block-1752808491315": {
+    "type": "Text",
+    "data": {
+      "style": {
+        "color": "#A3A3A3",
+        "fontWeight": "normal",
+        "textAlign": "center",
+        "padding": {
+          "top": 16,
+          "bottom": 16,
+          "right": 24,
+          "left": 24
+        }
+      },
+      "props": {
+        "text": "Problems? Just reply to this email."
       }
     }
   }
-  
+}
