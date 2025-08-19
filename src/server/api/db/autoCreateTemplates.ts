@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import db from '../../../../utils/db';
 import { saveJsonToMinio } from '../minio/saveJsonToMinio';
+import { minioClient } from '../../../../utils/minioClient';
 import { 
   saveNewTemplateToDb, 
   saveVersionToDb, 
@@ -110,5 +111,32 @@ export async function autoCreateTemplatesForUser(userId: number, username: strin
       success: false,
       error: 'Failed to create templates for new user'
     };
+  }
+} 
+
+export async function ensureUserBucketExists(username: string) {
+  try {
+    const safeUsername = username.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const bucket = `${safeUsername}`;
+    
+    const exists = await minioClient.bucketExists(bucket);
+    if (!exists) {
+      await minioClient.makeBucket(bucket);
+    }
+    return { success: true, bucket };
+  } catch (error) {
+    return { success: false, error };
+  }
+} 
+
+export async function ensureAllUserBucketsExist() {
+  try {
+    const result = await db.query('SELECT name FROM users WHERE deleted_at IS NULL');
+    
+    for (const row of result.rows) {
+      await ensureUserBucketExists(row.name);
+    }
+    
+  } catch (error) {
   }
 } 

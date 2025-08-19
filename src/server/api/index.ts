@@ -9,6 +9,7 @@ import fastifySwaggerUI from '@fastify/swagger-ui';
 import storeUsername from './middleware/storeUsername';
 import sendEmailRoute from './routes/sendEmail';
 import { deleteDemoUserData, deleteDemoUserBucket } from '../../jobs/deleteDemoUserData';
+import { ensureAllUserBucketsExist } from './db/autoCreateTemplates';
 
 const fastify = Fastify({ logger: true });
 
@@ -62,9 +63,16 @@ fastify.register(saveRoute);
 fastify.register(categoriesRoute);
 fastify.register(sendEmailRoute);
 
-fastify.listen({ port: 4000, host: '0.0.0.0' }, err => {
+fastify.listen({ port: 4000, host: '0.0.0.0' }, async (err) => {
   if (err) {
     fastify.log.error(err);
     process.exit(1);
+  }
+  
+  // Ensure all user buckets exist on startup
+  try {
+    await ensureAllUserBucketsExist();
+  } catch (error) {
+    console.error('Failed to ensure user buckets on startup:', error);
   }
 });
