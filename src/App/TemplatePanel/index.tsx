@@ -22,7 +22,7 @@ import JsonPanel from './JsonPanel';
 import MainTabsGroup from './MainTabsGroup';
 import ShareButton from './ShareButton';
 
-export default function TemplatePanel() {
+export default function TemplatePanel({ setRefreshSignal }: { setRefreshSignal?: (n: number) => void }) {
   const document = useDocument();
   const selectedMainTab = useSelectedMainTab();
   const selectedScreenSize = useSelectedScreenSize();
@@ -108,7 +108,7 @@ export default function TemplatePanel() {
         <ToggleSamplesPanelButton />
         <Stack px={2} direction="row" gap={2} width="100%" justifyContent="space-between" alignItems="center">
           <Stack direction="row" spacing={2}>
-            <MainTabsGroup />
+            <MainTabsGroup setRefreshSignal={setRefreshSignal} />
           </Stack>
           <Stack direction="row" spacing={2} alignItems="center">
             <DownloadJson />
@@ -126,7 +126,6 @@ export default function TemplatePanel() {
               </ToggleButton>
             </ToggleButtonGroup>
             <ShareButton />
-            {/* Show Login button if not authenticated, else show username chip and logout menu */}
             {!isAuthenticated ? (
               <Button
                 variant="contained"
@@ -134,7 +133,7 @@ export default function TemplatePanel() {
                 onClick={() => window.location.href = import.meta.env.VITE_APP_LOGIN_URL}
                 data-testid="login-button"
               >
-                Login
+                Switch User
               </Button>
             ) : (
               user && (
@@ -160,10 +159,22 @@ export default function TemplatePanel() {
                       horizontal: 'right',
                     }}
                   >
-                    <MenuItem onClick={handleLogout}>
-                      <Logout sx={{ mr: 1 }} fontSize="small" />
-                      Logout
-                    </MenuItem>
+                    {user.username === 'demo-user' ? (
+                      <MenuItem
+                        onClick={() => {
+                          handleUserMenuClose();
+                          window.location.href = import.meta.env.VITE_APP_LOGIN_URL;
+                        }}
+                      >
+                        <Logout sx={{ mr: 1 }} fontSize="small" />
+                        Switch User
+                      </MenuItem>
+                    ) : (
+                      <MenuItem onClick={handleLogout}>
+                        <Logout sx={{ mr: 1 }} fontSize="small" />
+                        Logout
+                      </MenuItem>
+                    )}
                   </Menu>
                 </>
               )

@@ -20,18 +20,11 @@ services:
     volumes:
       - .:/email-builder
     command: >
-      sh -c "npm install && npm run dev"
+      sh -c "npm install && node tools/migrate.cjs status && node tools/migrate.cjs up && npm run dev"
     restart: unless-stopped
     env_file: .env
     ports:
       - "${EXTERNAL_PORT:-8005}:5173"
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: mailpit
-    ports:
-      - "8025:8025"
-      - "1025:1025"
-    restart: unless-stopped
   db:
     platform: linux/amd64 #for platform error on Apple M1 chips
     restart: unless-stopped
